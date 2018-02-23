@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """
 Name: compute_transects.py
-Author: Phillip J. Wolfram, Mark Petersen
+Author: Phillip J. Wolfram, Mark Petersen, Luke Van Roekel
 
 Computes transport through sections.
 
