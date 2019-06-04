@@ -21,8 +21,8 @@ obs_direc = 'NOAA-COOPS_stations/'
 #stations_file = 'USGS_stations/stations.txt'
 #obs_direc = 'USGS_stations/'
 year = '2012'
-min_date = '2012 10 20 00 00'
-max_date = '2012 11 05 00 00'
+min_date = '2012 10 24 00 00'
+max_date = '2012 11 04 00 00'
 
 ################################################################################################
 ################################################################################################
@@ -159,8 +159,8 @@ if __name__ == '__main__':
                                  llcrnrlon=sta_lon-10.0,urcrnrlon=sta_lon+10.0,resolution='l')
     m.fillcontinents(color='tan',lake_color='lightblue')
     m.drawcoastlines()
-    ax.plot(sta_lon,sta_lat,'ro')
-    ax.plot(data['lon'][idx],data['lat'][idx],'bo')
+    ax.plot(sta_lon,sta_lat,'C0o')
+    ax.plot(data['lon'][idx],data['lat'][idx],'C1o')
 
     # Plot local station location
     ax = fig.add_subplot(gs[0,1])
@@ -168,13 +168,13 @@ if __name__ == '__main__':
                                  llcrnrlon=sta_lon-2.5,urcrnrlon=sta_lon+2.5,resolution='l')
     m.fillcontinents(color='tan',lake_color='lightblue')
     m.drawcoastlines()
-    ax.plot(sta_lon,sta_lat,'ro')
-    ax.plot(data['lon'][idx],data['lat'][idx],'bo')
+    ax.plot(sta_lon,sta_lat,'C0o')
+    ax.plot(data['lon'][idx],data['lat'][idx],'C1o')
 
     # Plot data
     ax = fig.add_subplot(gs[1,:])
-    l1, = ax.plot(obs_data['datetime'],obs_data['ssh'],'r-')
-    l2, = ax.plot(data['datetime'],data['ssh'][:,idx],'b-')
+    l1, = ax.plot(obs_data['datetime'],obs_data['ssh'],'C0-')
+    l2, = ax.plot(data['datetime'],data['ssh'][:,idx],'C1-')
     ax.set_xlabel('time')
     ax.set_ylabel('ssh (m)')
     ax.set_xlim([datetime.datetime.strptime(min_date,'%Y %m %d %H %M'),datetime.datetime.strptime(max_date,'%Y %m %d %H %M')])
