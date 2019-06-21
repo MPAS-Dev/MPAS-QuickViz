@@ -15,15 +15,6 @@ from scipy import spatial
 plt.switch_backend('agg')
 np.set_printoptions(threshold=np.nan)
 
-pointstats_file = 'pointwiseStats.nc'
-stations_file = 'NOAA-COOPS_stations/stations.txt'
-obs_direc = 'NOAA-COOPS_stations/'
-#stations_file = 'USGS_stations/stations.txt'
-#obs_direc = 'USGS_stations/'
-year = '2012'
-min_date = '2012 10 24 00 00'
-max_date = '2012 11 04 00 00'
-
 ################################################################################################
 ################################################################################################
 
@@ -89,15 +80,17 @@ def read_station_data(obs_file,min_date,max_date):
 ################################################################################################
 ################################################################################################
 
-def read_station_file(station_file):
+def read_station_file(station_file,stations={}):
+
+  # Initialize stations dictionary  
+  if len(stations) == 0:
+    stations['name'] = []
+    stations['lon'] = []
+    stations['lat'] = []
 
   # Read in stations names and location
   f = open(station_file)
   lines = f.read().splitlines()
-  stations = {}
-  stations['name'] = []
-  stations['lon'] = []
-  stations['lat'] = []
   for sta in lines:
     val = sta.split()
     stations['name'].append(val[2].strip("'"))
@@ -116,24 +109,33 @@ if __name__ == '__main__':
 
   pwd = os.getcwd()
 
+  # Read config file
+  f = open(pwd+'/plot_ssh.config')
+  cfg = yaml.load(f)
+  pprint.pprint(cfg)
+
   # Read in model point output data and create kd-tree 
-  data = read_pointstats(pointstats_file)
-  points = np.vstack((data['lon'],data['lat'])).T
-  tree = spatial.KDTree(points)
+  data = {}
+  tree = {}
+  
+  for run in cfg['pointstats_file']:
+    data[run] = read_pointstats(cfg['pointstats_file'][run])
+    points = np.vstack((data[run]['lon'],data[run]['lat'])).T
+    tree[run] = spatial.KDTree(points)
 
   # Read in station file
-  stations = read_station_file(stations_file)
+  stations = read_station_file(cfg['stations_file'])
 
   for i,sta in enumerate(stations['name']):
     print sta
 
     # Check if observation file exists
     obs_file = ""
-    obs_file_check = obs_direc+sta+'_'+year+'.txt'
+    obs_file_check = cfg['obs_direc']+sta+'_'+cfg['year']+'.txt'
     if os.path.isfile(obs_file_check):
       obs_file = obs_file_check
 
-    obs_file_check = obs_direc+sta+'.txt'
+    obs_file_check = cfg['obs_direc']+sta+'.txt'
     if os.path.isfile(obs_file_check):
       obs_file = obs_file_check   
 
@@ -141,45 +143,57 @@ if __name__ == '__main__':
     if not obs_file:
       continue
 
-    # Read in observed data
-    obs_data = read_station_data(obs_file,min_date,max_date)
-
-    # Find nearest model output point to station
+    # Read in observed data and get coordinates
+    obs_data = read_station_data(obs_file,cfg['min_date'],cfg['max_date'])
     sta_lon = stations['lon'][i]
     sta_lat = stations['lat'][i]
-    d,idx = tree.query(np.asarray([sta_lon,sta_lat]))
 
     # Create figure 
     fig = plt.figure(figsize=[6,4])
     gs = gridspec.GridSpec(nrows=2,ncols=2,figure=fig)
 
-    # Plot station location
-    ax = fig.add_subplot(gs[0,0])
+    # Plot observation station location
+    ax1 = fig.add_subplot(gs[0,0])
     m = Basemap(projection='cyl',llcrnrlat=sta_lat-7.0 ,urcrnrlat=sta_lat+7.0,\
                                  llcrnrlon=sta_lon-10.0,urcrnrlon=sta_lon+10.0,resolution='l')
     m.fillcontinents(color='tan',lake_color='lightblue')
     m.drawcoastlines()
-    ax.plot(sta_lon,sta_lat,'C0o')
-    ax.plot(data['lon'][idx],data['lat'][idx],'C1o')
+    ax1.plot(sta_lon,sta_lat,'C0o')
 
-    # Plot local station location
-    ax = fig.add_subplot(gs[0,1])
+    # Plot local observation station location
+    ax2 = fig.add_subplot(gs[0,1])
     m = Basemap(projection='cyl',llcrnrlat=sta_lat-1.75 ,urcrnrlat=sta_lat+1.75,\
                                  llcrnrlon=sta_lon-2.5,urcrnrlon=sta_lon+2.5,resolution='l')
     m.fillcontinents(color='tan',lake_color='lightblue')
     m.drawcoastlines()
-    ax.plot(sta_lon,sta_lat,'C0o')
-    ax.plot(data['lon'][idx],data['lat'][idx],'C1o')
+    ax2.plot(sta_lon,sta_lat,'C0o')
 
-    # Plot data
-    ax = fig.add_subplot(gs[1,:])
-    l1, = ax.plot(obs_data['datetime'],obs_data['ssh'],'C0-')
-    l2, = ax.plot(data['datetime'],data['ssh'][:,idx],'C1-')
-    ax.set_xlabel('time')
-    ax.set_ylabel('ssh (m)')
-    ax.set_xlim([datetime.datetime.strptime(min_date,'%Y %m %d %H %M'),datetime.datetime.strptime(max_date,'%Y %m %d %H %M')])
-    ax.xaxis.set_major_formatter(mdates.DateFormatter('%m-%d'))
-    lgd = plt.legend([l1,l2],['observed','modelled'],loc=9,bbox_to_anchor=(0.5,-0.5),ncol=2,fancybox=False,edgecolor='k')
+    # Plot observed data
+    ax3 = fig.add_subplot(gs[1,:])
+    l1, = ax3.plot(obs_data['datetime'],obs_data['ssh'],'C0-')
+    labels = ['observed']
+    lines = [l1]
+   
+    for i,run in enumerate(data):
+
+      # Find closest output point to station location
+      d,idx = tree[run].query(np.asarray([sta_lon,sta_lat]))
+      
+      # Plot output point location
+      ax1.plot(data[run]['lon'][idx],data[run]['lat'][idx],'C'+str(i+1)+'o')
+      ax2.plot(data[run]['lon'][idx],data[run]['lat'][idx],'C'+str(i+1)+'o')
+
+      # Plot modelled data
+      l2, = ax3.plot(data[run]['datetime'],data[run]['ssh'][:,idx],'C'+str(i+1)+'-')
+      labels.append(run)
+      lines.append(l2)
+      
+    # Set figure labels and axis properties and save
+    ax3.set_xlabel('time')
+    ax3.set_ylabel('ssh (m)')
+    ax3.set_xlim([datetime.datetime.strptime(cfg['min_date'],'%Y %m %d %H %M'),datetime.datetime.strptime(cfg['max_date'],'%Y %m %d %H %M')])
+    ax3.xaxis.set_major_formatter(mdates.DateFormatter('%m-%d'))
+    lgd = plt.legend(lines,labels,loc=9,bbox_to_anchor=(0.5,-0.5),ncol=2,fancybox=False,edgecolor='k')
     st = plt.suptitle('Station '+sta,y = 1.025,fontsize=16)
     fig.tight_layout()
     fig.savefig(sta+'.png',bbox_inches='tight',bbox_extra_artistis=(lgd,st,))
