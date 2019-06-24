@@ -13,7 +13,6 @@ import subprocess
 from mpl_toolkits.basemap import Basemap
 from scipy import spatial 
 plt.switch_backend('agg')
-np.set_printoptions(threshold=np.nan)
 
 ################################################################################################
 ################################################################################################
@@ -25,7 +24,8 @@ def read_pointstats(pointstats_file):
   data['date'] = pointstats_nc.variables['xtime'][:]
   data['datetime'] = []
   for date in data['date']:
-    data['datetime'].append(datetime.datetime.strptime(''.join(date).strip(),'%Y-%m-%d_%H:%M:%S'))
+    d = b''.join(date).strip()
+    data['datetime'].append(datetime.datetime.strptime(d.decode('ascii'),'%Y-%m-%d_%H:%M:%S'))
   data['datetime'] = np.asarray(data['datetime'],dtype='O')
   data['lon'] = np.degrees(pointstats_nc.variables['lonCellPointStats'][:])
   data['lon'] = np.mod(data['lon']+180.0,360.0)-180.0
@@ -127,7 +127,7 @@ if __name__ == '__main__':
   stations = read_station_file(cfg['stations_file'])
 
   for i,sta in enumerate(stations['name']):
-    print sta
+    print(sta)
 
     # Check if observation file exists
     obs_file = ""
