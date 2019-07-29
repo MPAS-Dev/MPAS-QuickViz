@@ -22,6 +22,7 @@ import matplotlib.pyplot as plt
 import xarray as xr
 from netCDF4 import Dataset
 import glob
+import platform
 
 m3ps_to_Sv = 1e-6 # m^3/sec flux to Sverdrups
 
@@ -42,8 +43,11 @@ def compute_transport(timeavg, mesh, mask, name='Drake Passage',output='transpor
     transectList = np.extract(condition, transectList)
   else:
     transectList = name.split(',')
+    if platform.release()[0] == '3':
+      for i in range(len(transectList)):
+        transectList[i] = "b'" + transectList[i]
 
-  print 'Computing Transport for the following transects ',transectList
+  print('Computing Transport for the following transects ',transectList)
   nTransects = len(transectList)
   maxEdges = mask.dims['maxEdgesInTransect']
 # create empty t list for time
@@ -90,7 +94,14 @@ def compute_transport(timeavg, mesh, mask, name='Drake Passage',output='transpor
   t = np.zeros(len(fileList))
   for i,fname in enumerate(fileList):
     ncid = Dataset(fname,'r')
-    vel = ncid.variables['timeMonthly_avg_normalTransportVelocity'][0,edgesToRead,:]
+    if 'timeMonthly_avg_normalTransportVelocity' in ncid.variables.keys():
+      vel = ncid.variables['timeMonthly_avg_normalTransportVelocity'][0,edgesToRead,:]
+    elif 'timeMonthly_avg_normalVelocity' in ncid.variables.keys():
+      vel = ncid.variables['timeMonthly_avg_normalVelocity'][0,edgesToRead,:]
+      if 'timeMonthly_avg_normalGMBolusVelocity' in ncid.variables.keys():
+        vel += ncid.variables['timeMonthly_avg_normalGMBolusVelocity'][0,edgesToRead,:]
+    else:
+      raise KeyError('no appropriate normalVelocity variable found')
     t[i] = ncid.variables['timeMonthly_avg_daysSinceStartOfSim'][:] / 365.
     ncid.close()
 #   Compute transport for each transect
@@ -104,24 +115,28 @@ def compute_transport(timeavg, mesh, mask, name='Drake Passage',output='transpor
   obsDict = {'Drake Passage':[120,175],'Tasmania-Ant':[147,167],'Africa-Ant':None,'Antilles Inflow':[-23.1,-13.7], \
           'Mona Passage':[-3.8,-1.4],'Windward Passage':[-7.2,-6.8],'Florida-Cuba':[30,33],'Florida-Bahamas':[30,33], \
           'Indonesian Throughflow':[-21,-11],'Agulhas':[-90,-50],'Mozambique Channel':[-20,-8], \
-          'Bering Strait':[0.17,1.49],'Lancaster Sound':None,'Fram Strait':None,'Robeson Channel':None}
+          'Bering Strait':[0.17,1.49],'Lancaster Sound':None,'Fram Strait':None,'Robeson Channel':None,'Nares Strait':None}
   labelDict = {'Drake Passage':'drake','Tasmania-Ant':'tasmania','Africa-Ant':'africaAnt','Antilles Inflow':'Antilles', \
           'Mona Passage':'monaPassage','Windward Passage':'windwardPassage','Florida-Cuba':'floridaCuba',\
              'Florida-Bahamas':'floridaBahamas', \
           'Indonesian Throughflow':'indonesia','Agulhas':'agulhas','Mozambique Channel':'mozambique', \
-          'Bering Strait':'beringstrait','Lancaster Sound':'lancaster','Fram Strait':'fram','Robeson Channel':'robeson'}
+          'Bering Strait':'beringstrait','Lancaster Sound':'lancaster','Fram Strait':'fram','Robeson Channel':'robeson','Nares Strait':'nares'}
 
   for i in range(nTransects):
     plt.figure()
-    bounds = obsDict[transectList[i]]
-    title = 'Transport for '+transectList[i]
+    if platform.release()[0]=='3':
+        searchString = transectList[i][2:]
+    else:
+        searchString = transectList[i]
+    bounds = obsDict[searchString]
+    title = 'Transport for '+searchString
     plt.plot(t,transport[:,i],'k',linewidth=2)
     if bounds is not None:
         plt.gca().fill_between(t, bounds[0]*np.ones_like(t), bounds[1]*np.ones_like(t), alpha=0.3, label='observations')
     plt.ylabel('Transport (Sv)',fontsize=32)
     plt.xlabel('Time (Years)',fontsize=32)
     plt.title(title,fontsize=32)
-    plt.savefig('transport_'+labelDict[transectList[i]]+'.png')
+    plt.savefig('transport_'+labelDict[searchString]+'.png')
 
 # Add calls to save transport and then can build up
   ncid=Dataset(output,mode='w',clobber=True, format='NETCDF3_CLASSIC')
