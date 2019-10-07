@@ -25,11 +25,14 @@ matplotlib.rc('ytick', labelsize=28)
 # mkdir regridded
 # ncks -d Time,0,100,10 output/debugTracer.0001-01-01_00.00.00.nc regridded/temp.nc
 # ncks -v latCell,lonCell -A init.nc regridded/temp.nc
+# ncks -d Time,0,2 -v potentialDensity output/output.0001-01-01_00.00.00.nc regridded/tempDensity.nc
+# ncks -v latCell,lonCell -A init.nc regridded/tempDensity.nc
 # cd regridded
 # ln -isf /usr/projects/climate/mpeterse/repos/APrime_Files/mapping/maps/* .
-# ncremap -i temp.nc -o mpasLatLon.nc -P mpas -m map_oEC60to30v3_TO_0.5x0.5degree_blin.nc -R "--rgr lat_nm=latCell --rgr lon_nm=lonCell --rgr lat_nm_out=lat --rgr lon_nm_out=lon" -C
+# ncremap -i temp.nc -o debugTracersLatLon.nc -P mpas -m map_oEC60to30v3_TO_0.5x0.5degree_blin.nc -R "--rgr lat_nm=latCell --rgr lon_nm=lonCell --rgr lat_nm_out=lat --rgr lon_nm_out=lon" -C
+# ncremap -i tempDensity.nc -o densityLatLon.nc -P mpas -m map_oEC60to30v3_TO_0.5x0.5degree_blin.nc -R "--rgr lat_nm=latCell --rgr lon_nm=lonCell --rgr lat_nm_out=lat --rgr lon_nm_out=lon" -C
 
-
+# I didn't get the density remapper to work.
 
 meshFile = 'init.nc'
 # Define workdir -- should be a place you have write access to
