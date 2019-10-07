@@ -20,13 +20,25 @@ matplotlib.rc('ytick', labelsize=28)
 
 #add nco stuff here
 # Fields to process for each run, define baseline and experiment here and workdir and variables to extract
-# Define workdir -- should be a place you have write access to
-workdir = '/lcrc/group/acme/lvanroe/regridded_files'
 
-baseline = '20170821.FCTfix-GM.GMPAS-IAF.T62_oECv3.anvil'
-experiment = '20170830.test.GMPAS-IAF.T62_oECv3.anvil'
-basePath = '/lcrc/group/acme/jwolfe/acme_scratch/'+baseline+'/run/'
-expPath = '/lcrc/group/acme/jwolfe/acme_scratch/'+experiment+'/run/'
+# What I actually did on the command line:
+# mkdir regridded
+# ncks -d Time,0,100,10 output/debugTracer.0001-01-01_00.00.00.nc regridded/temp.nc
+# ncks -v latCell,lonCell -A init.nc regridded/temp.nc
+# cd regridded
+# ln -isf /usr/projects/climate/mpeterse/repos/APrime_Files/mapping/maps/* .
+# ncremap -i temp.nc -o mpasLatLon.nc -P mpas -m map_oEC60to30v3_TO_0.5x0.5degree_blin.nc -R "--rgr lat_nm=latCell --rgr lon_nm=lonCell --rgr lat_nm_out=lat --rgr lon_nm_out=lon" -C
+
+
+
+meshFile = 'init.nc'
+# Define workdir -- should be a place you have write access to
+workdir = 'regridded_files'
+
+baseline = 'redi22'
+experiment = 'redi23'
+basePath = '/lustre/scratch4/turquoise/mpeterse/runs/'+baseline
+expPath = '/lustre/scratch4/turquoise/mpeterse/runs/'+experiments
 
 #files to average in standard glob format
 filenames = [basePath+'mpaso.hist.0005*',expPath+'mpaso.hist.0005*']
@@ -34,7 +46,7 @@ outfiles = ['baseline.nc','experiment.nc']
 
 # List time period of interest 
 # Variable to process if you want more than one, a comma separated list is acceptable
-variables_list = ['potentialDensity','temperature']
+variables_list = ['tracer1','tracer2']
 variables_to_process = ','.join(variables_list)
 
 #remove directory if exists FIX LATER -- should be better way to move/rename files from previous runs
