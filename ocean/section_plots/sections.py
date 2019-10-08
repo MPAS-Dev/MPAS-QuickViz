@@ -37,28 +37,37 @@ matplotlib.rc('ytick', labelsize=28)
 # Mark easy plot section
 
 import matplotlib as mpl
-matplotlib.use('Agg')
+mpl.use('Agg')
 import matplotlib.pyplot as plt
 from netCDF4 import Dataset
 import numpy as np
 
-lonRequest = [-150.0]
+lonRequest = [-150.0, -120, 30]
 
 ncfile1 = Dataset('debugLatLon.nc','r')
 lat = ncfile1.variables['lat']
 lon = ncfile1.variables['lon']
 tracer1 = ncfile1.variables['tracer1']
 tracer2 = ncfile1.variables['tracer2']
-iLon = np.where(lon[:]>lonRequest)[0][0]
 
 iTime=0
-
+nRow=3
+nCol=3
 plt.clf()
-ax = plt.imshow(tracer1[iTime,:,:,iLon])
-plt.clim(-1,2)
-plt.colorbar()
-plt.xlabel('longitude')
-plt.ylabel('level')
-plt.title('Redi test, at lon=' + str(lon[iLon]))
-plt.savefig('fig1.png')
+for iCol in range(nCol):
+    iLon = np.where(lon[:]>lonRequest[iCol])[0][0]
+    for iRow in range(nRow):
+        print('counter',2*iRow+iCol+1)
+        plt.subplot(nRow, nCol, iRow*nCol+iCol+1)
+        ax = plt.imshow(tracer2[iRow*4+2,10:30,55:80,iLon]) 
+        plt.clim(-1,2)
+        if iCol == nCol:
+            plt.ylabel('level')
+        if iRow == 0:
+            plt.title('lon=' + str(lon[iLon]))
+        if iRow == nRow-1:
+            plt.xlabel('longitude')
+
+#plt.colorbar()
+plt.savefig('fig2.png')
 
