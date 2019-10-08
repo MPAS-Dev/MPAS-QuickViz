@@ -44,7 +44,7 @@ import numpy as np
 
 lonRequest = [-150.0, -120, 30]
 
-ncfile1 = Dataset('debugLatLon.nc','r')
+ncfile1 = Dataset('debugTracersLatLon.nc','r')
 lat = ncfile1.variables['lat']
 lon = ncfile1.variables['lon']
 tracer1 = ncfile1.variables['tracer1']
@@ -60,7 +60,8 @@ for iCol in range(nCol):
         print('counter',2*iRow+iCol+1)
         plt.subplot(nRow, nCol, iRow*nCol+iCol+1)
         ax = plt.imshow(tracer2[iRow*4+2,10:30,55:80,iLon]) 
-        plt.clim(-1,2)
+        plt.set_cmap('gist_ncar')
+        plt.clim(-0.5,2.5)
         if iCol == nCol:
             plt.ylabel('level')
         if iRow == 0:
@@ -70,4 +71,12 @@ for iCol in range(nCol):
 
 #plt.colorbar()
 plt.savefig('fig2.png')
+
+plt.clf()
+ax = plt.imshow(tracer2[0,0,:,:]) 
+plt.gca().invert_yaxis()
+plt.clim(-0.5,2.5)
+plt.set_cmap('gist_ncar')
+plt.colorbar()
+plt.savefig('fig3.png')
 
