@@ -36,13 +36,13 @@ matplotlib.rc('ytick', labelsize=28)
 
 # Mark easy plot section
 
-import matplotlib
+import matplotlib as mpl
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from netCDF4 import Dataset
 import numpy as np
 
-lonRequest = [30.0]
+lonRequest = [-150.0]
 
 ncfile1 = Dataset('debugLatLon.nc','r')
 lat = ncfile1.variables['lat']
@@ -51,13 +51,14 @@ tracer1 = ncfile1.variables['tracer1']
 tracer2 = ncfile1.variables['tracer2']
 iLon = np.where(lon[:]>lonRequest)[0][0]
 
+iTime=0
 
-iLon = np.where(lon>30.0)[0]
-plt.imshow(cellWidth)
-plt.gca().invert_yaxis()
-plt.colorbar
+plt.clf()
+ax = plt.imshow(tracer1[iTime,:,:,iLon])
+plt.clim(-1,2)
+plt.colorbar()
 plt.xlabel('longitude')
-plt.ylabel('latitude')
-plt.title('cell width, km')
-plt.savefig('cellWidth.png')
+plt.ylabel('level')
+plt.title('Redi test, at lon=' + str(lon[iLon]))
+plt.savefig('fig1.png')
 
