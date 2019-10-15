@@ -44,42 +44,55 @@ import matplotlib.pyplot as plt
 from netCDF4 import Dataset
 import numpy as np
 
+# Input arguments
+varNames = ['potentialDensity','relativeSlopeTopOfCell','relativeSlopeTaperingCell','k33','tracer1','tracer2']
+landValue = [1027, -0.1, -0.1, 0.0,-0.1,-0.1]
+
 lonRequest = [-150.0, -120, 30]
+latSpan = [-70,10]
+iTime=4
 
 ncfile1 = Dataset('debugTracersLatLon.nc','r')
 lat = ncfile1.variables['lat']
 lon = ncfile1.variables['lon']
-tracer1 = ncfile1.variables['tracer1']
-tracer2 = ncfile1.variables['tracer2']
 
-print(tracer2.shape)
-iTime=0
-nRow=3
-nCol=3
+fig = plt.gcf()
+fig.set_size_inches(8.0,16.0)
+nRow=len(varNames)
+nCol=1
 plt.clf()
-for iCol in range(nCol):
-    iLon = np.where(lon[:]>lonRequest[iCol])[0][0]
-    for iRow in range(nRow):
-        print('counter',2*iRow+iCol+1)
+iLon = np.where(lon[:]>lonRequest[0])[0][0]
+iLat0 = np.where(lat[:]>latSpan[0])[0][0]
+iLat1 = np.where(lat[:]>latSpan[1])[0][0]
+print('lat',iLat0,iLat1)
+for iRow in range(nRow):
+    var = ncfile1.variables[varNames[iRow]]
+    for iCol in range(nCol):
+        #print('counter',2*iRow+iCol+1)
         plt.subplot(nRow, nCol, iRow*nCol+iCol+1)
-        ax = plt.imshow(tracer2[iRow*2,10:30,55:80,iLon]) 
+        tmp = var[iTime,0:35,iLat0:iLat1,iLon]
+        tmp2 = np.where(tmp>-1e20,tmp,landValue[iRow])
+        ax = plt.imshow(tmp2,extent=[lat[iLat0],lat[iLat1],30,0])
         plt.set_cmap('gist_ncar')
-        plt.clim(-0.5,2.5)
+        #plt.clim(-0.5,2.5)
+        plt.colorbar()
+        if iCol == 0:
+            plt.ylabel(varNames[iRow])
         if iCol == nCol:
             plt.ylabel('level')
         if iRow == 0:
             plt.title('lon=' + str(lon[iLon]))
         if iRow == nRow-1:
-            plt.xlabel('longitude')
+            plt.xlabel('latitude')
 
 #plt.colorbar()
-plt.savefig('fig2.png')
+plt.savefig('variables.png')
 
-plt.clf()
-ax = plt.imshow(tracer2[0,0,:,:]) 
-plt.gca().invert_yaxis()
-plt.clim(-0.5,2.5)
-plt.set_cmap('gist_ncar')
-plt.colorbar()
-plt.savefig('fig3.png')
+#plt.clf()
+#ax = plt.imshow(tracer2[0,0,:,:]) 
+#plt.gca().invert_yaxis()
+#plt.clim(-0.5,2.5)
+#plt.set_cmap('gist_ncar')
+#plt.colorbar()
+#plt.savefig('fig3.png')
 
