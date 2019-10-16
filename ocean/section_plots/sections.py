@@ -45,45 +45,59 @@ from netCDF4 import Dataset
 import numpy as np
 
 # Input arguments
-varNames = ['potentialDensity','relativeSlopeTopOfCell','relativeSlopeTaperingCell','k33','tracer1','tracer2']
-landValue = [1027, -0.1, -0.1, 0.0,-0.1,-0.1]
+varNames = ['temperature','salinity','potentialDensity','relativeSlopeTopOfCell','relativeSlopeTaperingCell','tracer1','tracer2']
+landValue = [-0.1,-0.1,1027, -0.1, -0.1, -0.1,-0.1]
 
-lonRequest = [-150.0, -120, 30]
+lonRequest = [-150.0, -110]
 latSpan = [-70,10]
-iTime=4
+layerSpan = [0,35]
+iLayer = 22
+iTime = 4
 
 ncfile1 = Dataset('debugTracersLatLon.nc','r')
 lat = ncfile1.variables['lat']
 lon = ncfile1.variables['lon']
 
 fig = plt.gcf()
-fig.set_size_inches(8.0,16.0)
+fig.set_size_inches(16.0,16.0)
 nRow=len(varNames)
-nCol=1
+nCol=3
 plt.clf()
-iLon = np.where(lon[:]>lonRequest[0])[0][0]
 iLat0 = np.where(lat[:]>latSpan[0])[0][0]
 iLat1 = np.where(lat[:]>latSpan[1])[0][0]
 print('lat',iLat0,iLat1)
 for iRow in range(nRow):
     var = ncfile1.variables[varNames[iRow]]
     for iCol in range(nCol):
+        iLon = np.where(lon[:]>lonRequest[iCol-1])[0][0]
+
         #print('counter',2*iRow+iCol+1)
         plt.subplot(nRow, nCol, iRow*nCol+iCol+1)
-        tmp = var[iTime,0:35,iLat0:iLat1,iLon]
-        tmp2 = np.where(tmp>-1e20,tmp,landValue[iRow])
-        ax = plt.imshow(tmp2,extent=[lat[iLat0],lat[iLat1],30,0])
+        if iCol==0:
+            tmp = var[iTime,iLayer,:,:]
+            tmp2 = np.where(tmp>-1e20,tmp,landValue[iRow])
+            ax = plt.imshow(tmp2,extent=[-180,180,-90,90],aspect=0.8)
+        else:
+            tmp = var[iTime,layerSpan[0]:layerSpan[1],iLat0:iLat1,iLon]
+            tmp2 = np.where(tmp>-1e20,tmp,landValue[iRow])
+            ax = plt.imshow(tmp2,extent=[lat[iLat0],lat[iLat1],layerSpan[1],layerSpan[0]])
         plt.set_cmap('gist_ncar')
         #plt.clim(-0.5,2.5)
         plt.colorbar()
         if iCol == 0:
-            plt.ylabel(varNames[iRow])
-        if iCol == nCol:
-            plt.ylabel('level')
-        if iRow == 0:
-            plt.title('lon=' + str(lon[iLon]))
+            plt.title(varNames[iRow]+', layer '+str(iLayer))
+            plt.gca().invert_yaxis()
+        else:
+            plt.title(varNames[iRow]+', lon='+str(lon[iLon]))
+
         if iRow == nRow-1:
-            plt.xlabel('latitude')
+            if iCol == 0:
+                plt.xlabel('longitude')
+            else:
+                plt.xlabel('latitude')
+        else:
+            plt.gca().get_xaxis().set_visible(False)
+
 
 #plt.colorbar()
 plt.savefig('variables.png')
