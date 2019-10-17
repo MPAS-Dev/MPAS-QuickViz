@@ -23,6 +23,7 @@ path = '/lustre/scratch4/turquoise/mpeterse/runs'
 runName = 'redi26'
 meshFile = 'init.nc'
 dataFile = 'regridded/debugTracersLatLon.nc'
+figsDir = 'figures'
 titleTxt = 'EC60to30, MPAS-Ocean stand alone, with Redi mixing on'
 varNames = ['temperature','salinity','potentialDensity','relativeSlopeTopOfCell','relativeSlopeTaperingCell','tracer1','tracer2']
 landValue = [-0.1,-0.1,1027, -0.1, -0.1, -0.1,-0.1]
@@ -107,4 +108,4 @@ for iRow in range(nRows):
         plt.colorbar()
 
 plt.tight_layout()
-plt.savefig('variables.png')
+plt.savefig(path+'/'+runName+'/'+figsDir+'/'+'section_plot_'+runName+'_time_'+str(iTime)+'.png')
