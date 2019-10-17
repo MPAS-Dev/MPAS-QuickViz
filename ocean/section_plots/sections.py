@@ -16,24 +16,28 @@ mpl.use('Agg')
 import matplotlib.pyplot as plt
 from netCDF4 import Dataset
 import numpy as np
+import datetime
 
 # Input arguments
+path = '/lustre/scratch4/turquoise/mpeterse/runs'
+runName = 'redi26'
+meshFile = 'init.nc'
+dataFile = 'regridded/debugTracersLatLon.nc'
 titleTxt = 'EC60to30, MPAS-Ocean stand alone, with Redi mixing on'
 varNames = ['temperature','salinity','potentialDensity','relativeSlopeTopOfCell','relativeSlopeTaperingCell','tracer1','tracer2']
 landValue = [-0.1,-0.1,1027, -0.1, -0.1, -0.1,-0.1]
-meshFile = '../init.nc'
+layer = [0, 22] # layers for horizontal plots, columns 0 and 1.
+layerSpan = [0,35] # vertical span of cross-section plots, columns 2 and 3.
 lonRequest = [-150.0, -110]
 latSpan = [-70,10]
-layerSpan = [0,35]
-layer = [0, 22]
 iTime = 4
 
 # load mesh variables and time
-ncfile1 = Dataset('debugTracersLatLon.nc','r')
+ncfile1 = Dataset(path+'/'+runName+'/'+dataFile,'r')
 xtime = ncfile1.variables['xtime']
 lat = ncfile1.variables['lat']
 lon = ncfile1.variables['lon']
-ncMeshFile = Dataset(meshFile,'r')
+ncMeshFile = Dataset(path+'/'+runName+'/'+meshFile,'r')
 refBottomDepth = ncMeshFile.variables['refBottomDepth']
 
 # set up indices
@@ -43,14 +47,27 @@ nLayerCols=2
 iLat0 = np.where(lat[:]>latSpan[0])[0][0]
 iLat1 = np.where(lat[:]>latSpan[1])[0][0]
 
-# Set up figure
+# Set up figure, add title text
 fig = plt.gcf()
 fig.set_size_inches(18.0,16.0)
 plt.clf()
 plt.subplot2grid((nRows+1, nCols), (0,0), colspan=3)
-plt.text(.1,.6,titleTxt, fontsize=14, fontweight='bold', verticalalignment='bottom', horizontalalignment='left')
-plt.text(.1,.4,'time='+str(xtime[2,:],'utf-8'), fontsize=12, fontweight='normal', verticalalignment='bottom', horizontalalignment='left')
+plt.text(.1,.8,titleTxt, fontsize=14, fontweight='bold', verticalalignment='bottom', horizontalalignment='left')
+plt.text(.1,.6,'time='+str(xtime[2,:],'utf-8'), fontsize=12, fontweight='normal', verticalalignment='bottom', horizontalalignment='left')
+plt.text(.1,.4,'path: '+path+'/'+dataFile, fontsize=12, fontweight='normal', verticalalignment='bottom', horizontalalignment='left')
+now = datetime.datetime.now()
+plt.text(.1,.2,'created: '+now.strftime("%Y-%m-%d"), fontsize=12, fontweight='normal', verticalalignment='bottom', horizontalalignment='left')
 plt.gca().axis('off')
+
+# plot refBottomDepth
+plt.subplot2grid((nRows+1, nCols), (0,3))
+plt.plot(refBottomDepth[layerSpan[0]:layerSpan[1]+1],np.arange(layerSpan[0],layerSpan[1]+1))
+plt.ylabel('vertical index')
+plt.xlabel('depth, m')
+plt.gca().invert_yaxis()
+plt.gca().set_aspect(14)
+plt.grid(True)
+
 for iRow in range(nRows):
     var = ncfile1.variables[varNames[iRow]]
     for iCol in range(nCols):
@@ -83,6 +100,8 @@ for iRow in range(nRows):
             plt.title(varNames[iRow]+', lon='+str(lon[iLon]))
             if iRow == nRows-1:
                 plt.xlabel('latitude')
+        if iCol==2:
+            plt.ylabel('vertical index')
 
         plt.set_cmap('gist_ncar')
         plt.colorbar()
