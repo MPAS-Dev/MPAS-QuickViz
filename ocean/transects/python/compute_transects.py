@@ -7,11 +7,14 @@ Computes transport through sections.
 
 Example call:
   ./compute_transects.py
-  -k /lustre/scratch3/turquoise/mpeterse/runs/c62n/ocean/global_ocean/EC_60to30km/spin_up/init_step2/EC60to30v3_transect_masks.nc
-  -m /lustre/scratch2/turquoise/mpeterse/runs/c69z/init.nc
-  -t '/lustre/scratch2/turquoise/mpeterse/runs/c69z/analysis_members/timeSeriesStatsMonthly.*.nc'
-  -n 'Drake Passage'
+  -k transect_masks.nc
+  -m MPAS_mesh.nc
+  -t 'RUN_PATH/analysis_members/timeSeriesStatsMonthly.*.nc'
+  -n 'all'
 
+To create the transect_masks.nc file, load e3sm-unified and:
+   MpasMaskCreator.x MPAS_mesh.nc  transect_masks.nc -f transect_definitions.geojson
+where the transect_definitions.geojson file includes a sequence of lat/lon points for each transect.
 """
 
 # ensure plots are rendered on ICC
@@ -170,7 +173,7 @@ if __name__ == "__main__":
   parser.add_argument("-k", "--mask_file", dest="mask_filename",
       help="MPAS mask filename.", required=True)
   parser.add_argument("-n", "--name", dest="name",
-      help="Transect name for computation", metavar="NAME")
+      help="List of transect names for computation, or 'all'", metavar="NAME")
   args = parser.parse_args()
 
   compute_transport(timeavg=args.time_avg_filename_pattern,
