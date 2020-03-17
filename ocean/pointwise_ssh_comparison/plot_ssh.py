@@ -10,9 +10,14 @@ import os
 import yaml
 import pprint
 import subprocess
-from mpl_toolkits.basemap import Basemap
+import cartopy
+import cartopy.crs as ccrs
+import cartopy.feature as cfeature
 from scipy import spatial
 plt.switch_backend('agg')
+cartopy.config['pre_existing_data_dir'] = \
+        os.getenv('CARTOPY_DIR', cartopy.config.get('pre_existing_data_dir'))
+
 
 ################################################################################################
 ################################################################################################
@@ -153,20 +158,20 @@ if __name__ == '__main__':
     gs = gridspec.GridSpec(nrows=2,ncols=2,figure=fig)
 
     # Plot observation station location
-    ax1 = fig.add_subplot(gs[0,0])
-    m = Basemap(projection='cyl',llcrnrlat=sta_lat-7.0 ,urcrnrlat=sta_lat+7.0,\
-                                 llcrnrlon=sta_lon-10.0,urcrnrlon=sta_lon+10.0,resolution='l')
-    m.fillcontinents(color='tan',lake_color='lightblue')
-    m.drawcoastlines()
-    ax1.plot(sta_lon,sta_lat,'C0o')
+    ax1 = fig.add_subplot(gs[0,0], projection=ccrs.PlateCarree())
+    ax1.set_extent([sta_lon-10.0, sta_lon+10.00, sta_lat-7.0 , sta_lat+7.0], crs=ccrs.PlateCarree())
+    ax1.add_feature(cfeature.LAND, zorder=100)
+    ax1.add_feature(cfeature.LAKES, alpha=0.5, zorder=101)
+    ax1.add_feature(cfeature.COASTLINE, zorder=101)
+    ax1.plot(sta_lon,sta_lat,'C0o', zorder=102)
 
     # Plot local observation station location
-    ax2 = fig.add_subplot(gs[0,1])
-    m = Basemap(projection='cyl',llcrnrlat=sta_lat-1.75 ,urcrnrlat=sta_lat+1.75,\
-                                 llcrnrlon=sta_lon-2.5,urcrnrlon=sta_lon+2.5,resolution='l')
-    m.fillcontinents(color='tan',lake_color='lightblue')
-    m.drawcoastlines()
-    ax2.plot(sta_lon,sta_lat,'C0o')
+    ax2 = fig.add_subplot(gs[0,1], projection=ccrs.PlateCarree())
+    ax2.set_extent([sta_lon-2.5, sta_lon+2.5, sta_lat-1.75 , sta_lat+1.75], crs=ccrs.PlateCarree())
+    ax2.add_feature(cfeature.LAND, zorder=100)
+    ax2.add_feature(cfeature.LAKES, alpha=0.5, zorder=101)
+    ax2.add_feature(cfeature.COASTLINE, zorder=101)
+    ax2.plot(sta_lon,sta_lat,'C0o', zorder=102)
 
     # Plot observed data
     ax3 = fig.add_subplot(gs[1,:])
