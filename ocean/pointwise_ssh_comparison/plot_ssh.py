@@ -162,7 +162,7 @@ if __name__ == '__main__':
     ax1.set_extent([sta_lon-10.0, sta_lon+10.00, sta_lat-7.0 , sta_lat+7.0], crs=ccrs.PlateCarree())
     ax1.add_feature(cfeature.LAND, zorder=100)
     ax1.add_feature(cfeature.LAKES, alpha=0.5, zorder=101)
-    ax1.add_feature(cfeature.COASTLINE, zorder=101)
+    ax1.coastlines('50m', zorder=101)
     ax1.plot(sta_lon,sta_lat,'C0o', zorder=102)
 
     # Plot local observation station location
@@ -170,7 +170,7 @@ if __name__ == '__main__':
     ax2.set_extent([sta_lon-2.5, sta_lon+2.5, sta_lat-1.75 , sta_lat+1.75], crs=ccrs.PlateCarree())
     ax2.add_feature(cfeature.LAND, zorder=100)
     ax2.add_feature(cfeature.LAKES, alpha=0.5, zorder=101)
-    ax2.add_feature(cfeature.COASTLINE, zorder=101)
+    ax2.coastlines('50m', zorder=101)
     ax2.plot(sta_lon,sta_lat,'C0o', zorder=102)
 
     # Plot observed data
