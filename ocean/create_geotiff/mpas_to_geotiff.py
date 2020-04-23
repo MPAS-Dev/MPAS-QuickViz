@@ -61,6 +61,12 @@ if __name__ == "__main__":
     print('Incompatible output variable')
     raise SystemExit(0)
 
+  if cfg['inundation']:
+    bathy = ncfile.variables['bottomDepth'][:]
+    var = var + bathy
+    var[bathy > 0] = np.nan
+    var[var < 0.01] = np.nan
+
   # Read data from mesh file
   ncmesh = Dataset(cfg['mesh_file'],'r')
   lon_mesh = np.rad2deg(np.mod(ncmesh.variables['lonCell'][:] + np.pi, 2.0*np.pi) - np.pi)
