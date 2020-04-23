@@ -64,8 +64,11 @@ if __name__ == "__main__":
   if cfg['inundation']:
     bathy = ncfile.variables['bottomDepth'][:]
     var = var + bathy
+    thinlayers = np.min(var)
+    var -= thinlayers
     var[bathy > 0] = np.nan
     var[var < 0.01] = np.nan
+    print("Thin layers total of {:f} thickness.".format(thinlayers))
 
   # Read data from mesh file
   ncmesh = Dataset(cfg['mesh_file'],'r')
