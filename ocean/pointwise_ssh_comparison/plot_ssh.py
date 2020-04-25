@@ -176,7 +176,7 @@ if __name__ == '__main__':
     # Plot observed data
     ax3 = fig.add_subplot(gs[1,:])
     l1, = ax3.plot(obs_data['datetime'],obs_data['ssh'],'C0-')
-    labels = ['observed']
+    labels = ['Observed']
     lines = [l1]
 
     for i,run in enumerate(data):
