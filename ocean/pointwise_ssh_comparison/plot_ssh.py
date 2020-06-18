@@ -30,7 +30,7 @@ def read_pointstats(pointstats_file):
   data['datetime'] = []
   for date in data['date']:
     d = b''.join(date).strip()
-    data['datetime'].append(datetime.datetime.strptime(d.decode('ascii'),'%Y-%m-%d_%H:%M:%S'))
+    data['datetime'].append(datetime.datetime.strptime(d.decode('ascii').strip('\x00'),'%Y-%m-%d_%H:%M:%S'))
   data['datetime'] = np.asarray(data['datetime'],dtype='O')
   data['lon'] = np.degrees(pointstats_nc.variables['lonCellPointStats'][:])
   data['lon'] = np.mod(data['lon']+180.0,360.0)-180.0
@@ -198,7 +198,7 @@ if __name__ == '__main__':
     ax3.set_ylabel('ssh (m)')
     ax3.set_xlim([datetime.datetime.strptime(cfg['min_date'],'%Y %m %d %H %M'),datetime.datetime.strptime(cfg['max_date'],'%Y %m %d %H %M')])
     ax3.xaxis.set_major_formatter(mdates.DateFormatter('%m-%d'))
-    lgd = plt.legend(lines,labels,loc=9,bbox_to_anchor=(0.5,-0.5),ncol=2,fancybox=False,edgecolor='k')
+    lgd = plt.legend(lines,labels,loc=9,bbox_to_anchor=(0.5,-0.5),ncol=3,fancybox=False,edgecolor='k')
     st = plt.suptitle('Station '+sta,y = 1.025,fontsize=16)
     fig.tight_layout()
     fig.savefig(sta+'.png',bbox_inches='tight',bbox_extra_artistis=(lgd,st,))
