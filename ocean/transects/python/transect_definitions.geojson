@@ -1,0 +1,391 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Atlantic Transect",
+        "component": "ocean",
+        "tags": "",
+        "author": "Nils Feige",
+        "object": "transect"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            19.9,
+            -34.5
+          ],
+          [
+            -55,
+            -34.5
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Atlantic",
+        "component": "ocean",
+        "tags": "",
+        "author": "Nils Feige",
+        "object": "region"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              22,
+              -35
+            ],
+            [
+              22,
+              10
+            ],
+            [
+              0,
+              10
+            ],
+            [
+              0,
+              49
+            ],
+            [
+              13,
+              49
+            ],
+            [
+              13,
+              66
+            ],
+            [
+              30,
+              66
+            ],
+            [
+              30,
+              70
+            ],
+            [
+              -70,
+              70
+            ],
+            [
+              -70,
+              50
+            ],
+            [
+              -98,
+              50
+            ],
+            [
+              -98,
+              17
+            ],
+            [
+              -89,
+              17
+            ],
+            [
+              -89,
+              14
+            ],
+            [
+              -84,
+              14
+            ],
+            [
+              -84,
+              9
+            ],
+            [
+              -63,
+              9
+            ],
+            [
+              -63,
+              -35
+            ],
+            [
+              22,
+              -35
+            ]
+          ]
+        ]
+      }
+    },
+		{"type": "Feature",
+		 "properties": {
+			"author": "Mark Petersen",
+			"component": "ocean",
+			"depth": "6000.0",
+			"name": "Drake Passage, S Ocean -56  to -63 lat,  68W lon, section A21,  140+/- 6 Sv in Ganachaud_Wunsch00n and Ganachaud99thesis",
+			"object": "transect",
+			"tags": "standard_channel_transects"
+		 },
+		 "geometry":
+			{"type": "LineString",
+			 "coordinates":
+				[
+					[ -63.0, -65.5],
+					[ -67.0, -54.5]
+				]
+			}
+		},
+		{"type": "Feature",
+		 "properties": {
+			"author": "Mark Petersen",
+			"component": "ocean",
+			"depth": "6000.0",
+			"name": "Tasmania-Ant, S Ocean  -44  to -66 lat, 140E lon, section P12,  157+/-10 Sv in Ganachaud_Wunsch00n and Ganachaud99thesis",
+			"object": "transect",
+			"tags": "standard_channel_transects"
+		 },
+		 "geometry":
+			{"type": "LineString",
+			 "coordinates":
+				[
+					[ 140 , -67 ], 
+					[ 147 , -43.5 ]
+				]
+			}
+		},
+		{"type": "Feature",
+		 "properties": {
+			"author": "Mark Petersen",
+			"component": "ocean",
+			"depth": "6000.0",
+			"name": "Africa-Ant, S Ocean    -31.3to -70 lat,  30E lon, section  I6,           Sv in Ganachaud99thesis",
+			"object": "transect",
+			"tags": "standard_channel_transects"
+		 },
+		 "geometry":
+			{"type": "LineString",
+			 "coordinates":
+				[
+					[ 30.0, -70.0 ],
+					[ 30.0 ,-31.3  ]
+				]
+			}
+		},
+		{"type": "Feature",
+		 "properties": {
+			"author": "Mark Petersen",
+			"component": "ocean",
+			"depth": "6000.0",
+			"name": "Antilles Inflow, Carib.                                       -18.4+/-4.7Sv in Johns_ea02dsr",
+			"object": "transect",
+			"tags": "standard_channel_transects"
+		 },
+		 "geometry":
+			{"type": "LineString",
+			 "coordinates":
+				[
+					[ -63.2 , 10.7 ],
+					[ -65.9 , 18.0 ]
+				]
+			}
+		},
+		{"type": "Feature",
+		 "properties": {
+			"author": "Mark Petersen",
+			"component": "ocean",
+			"depth": "6000.0",
+			"name": "Mona Passage, Caribbian                                        -2.6+/-1.2Sv in Johns_ea02dsr",
+			"object": "transect",
+			"tags": "standard_channel_transects"
+		 },
+		 "geometry":
+			{"type": "LineString",
+			 "coordinates":
+				[
+					[ -67.2 , 18.4 ],
+					[ -68.5 , 18.4 ]
+				]
+			}
+		},
+		{"type": "Feature",
+		 "properties": {
+			"author": "Mark Petersen",
+			"component": "ocean",
+			"depth": "6000.0",
+			"name": "Windward Passage, Carib                                        -7.0      Sv in Nelepo_ea76sr, Roemmich81jgr",
+			"object": "transect",
+			"tags": "standard_channel_transects"
+		 },
+		 "geometry":
+			{"type": "LineString",
+			 "coordinates":
+				[
+					[ -73.4 , 19.8 ],
+					[ -74.3 , 20.1  ]
+				]
+			}
+		},
+		{"type": "Feature",
+		 "properties": {
+			"author": "Mark Petersen",
+			"component": "ocean",
+			"depth": "6000.0",
+			"name": "Florida-Cuba, Caribbian                                        31.5+/-1.5Sv in Johns_ea02dsr, 32.3+/-3.2Sv Larsen92rslpt",
+			"object": "transect",
+			"tags": "standard_channel_transects"
+		 },
+		 "geometry":
+			{"type": "LineString",
+			 "coordinates":
+				[
+					[ -81.0 ,  23.1 ],
+					[ -81.0 , 25.15 ]
+				]
+			}
+		},
+		{"type": "Feature",
+		 "properties": {
+			"author": "Mark Petersen",
+			"component": "ocean",
+			"depth": "6000.0",
+			"name": "Florida-Bahamas, Carib. 27 lat, -80  to -78.8lon,              31.5+/-1.5Sv in Johns_ea02dsr, 32.3+/-3.2Sv Larsen92rslpt",
+			"object": "transect",
+			"tags": "standard_channel_transects"
+		 },
+		 "geometry":
+			{"type": "LineString",
+			 "coordinates":
+				[
+					[ -78.78  , 26.52 ],
+					[-80.1  , 26.7 ]
+				]
+			}
+		},
+		{"type": "Feature",
+		 "properties": {
+			"author": "Mark Petersen",
+			"component": "ocean",
+			"depth": "6000.0",
+			"name": "Indonesian Throughflow, -9  to -18 lat, 116E lon, section J89,  -16+/- 5 Sv in Ganachaud_Wunsch00n and Ganachaud99thesis",
+			"object": "transect",
+			"tags": "standard_channel_transects"
+		 },
+		 "geometry":
+			{"type": "LineString",
+			 "coordinates":
+				[
+					[ 116.0, -21 ],
+					[ 116.0 ,-8.8  ]
+				]
+			}
+		},
+		{"type": "Feature",
+		 "properties": {
+			"author": "Mark Petersen",
+			"component": "ocean",
+			"depth": "6000.0",
+			"name": "Agulhas                                                         -70+/-20 Sv in Bryden_Beal01dsr",
+			"object": "transect",
+			"tags": "standard_channel_transects"
+		 },
+		 "geometry":
+			{"type": "LineString",
+			 "coordinates":
+				[
+					[ 32.0 , -32.4 ],
+					[ 30.2 , -31.0 ]
+				]
+			}
+		},
+		{"type": "Feature",
+		 "properties": {
+			"author": "Mark Petersen",
+			"component": "ocean",
+			"depth": "6000.0",
+			"name": "Mozambique Channel,    -25 lat,  35  to  44E lon, section I4 ,  -14+/- 6 Sv in Ganachaud_Wunsch00n and Ganachaud99thesis",
+			"object": "transect",
+			"tags": "standard_channel_transects"
+		 },
+		 "geometry":
+			{"type": "LineString",
+			 "coordinates":
+				[
+					[ 44.0 , -25.0 ], 
+					[ 34.0 , -25.0 ]
+				]
+			}
+		},
+		{"type": "Feature",
+		 "properties": {
+			"author": "Mark Petersen",
+			"component": "ocean",
+			"depth": "6000.0",
+			"name": "Bering Strait, Arctic                                          0.83+/-0.66Sv in Roach_ea95jgr",
+			"object": "transect",
+			"tags": "standard_channel_transects"
+		 },
+		 "geometry":
+			{"type": "LineString",
+			 "coordinates":
+				[
+					[ -167.7 , 65.8 ],
+					[ -169.7 , 66.1 ]
+				]
+			}
+		},
+		{"type": "Feature",
+		 "properties": {
+			"author": "Mark Petersen",
+			"component": "ocean",
+			"depth": "6000.0",
+			"name": "Lancaster Sound, Arctic                                        0.67+/-0.3Sv in Maltrud_McLean05om",
+			"object": "transect",
+			"tags": "standard_channel_transects"
+		 },
+		 "geometry":
+			{"type": "LineString",
+			 "coordinates":
+				[
+					[ -80.6, 73.7 ],
+					[ -81.0, 74.6 ]
+				]
+			}
+		},
+		{"type": "Feature",
+		 "properties": {
+			"author": "Mark Petersen",
+			"component": "ocean",
+			"depth": "6000.0",
+			"name": "Fram Strait, Arctic                                           -4.2+/-2.3Sv in Fahrbach_ea01pr",
+			"object": "transect",
+			"tags": "standard_channel_transects"
+		 },
+		 "geometry":
+			{"type": "LineString",
+			 "coordinates":
+				[
+					[  10.7, 79.7 ],
+					[ -17.7, 79.7 ]
+				]
+			}
+		},
+		{"type": "Feature",
+		 "properties": {
+			"author": "Mark Petersen",
+			"component": "ocean",
+			"depth": "6000.0",
+			"name": "Robeson Channel, Arctic                                       -0.75+/-0.2Sv in Maltrud_McLean05om",
+			"object": "transect",
+			"tags": "standard_channel_transects"
+		 },
+		 "geometry":
+			{"type": "LineString",
+			 "coordinates":
+				[
+					[ -63.5, 81.0 ],
+					[ -63.5, 82.0 ]
+				]
+			}
+		}
+	]
+}
