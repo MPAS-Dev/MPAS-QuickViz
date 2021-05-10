@@ -201,5 +201,5 @@ if __name__ == '__main__':
     lgd = plt.legend(lines,labels,loc=9,bbox_to_anchor=(0.5,-0.5),ncol=3,fancybox=False,edgecolor='k')
     st = plt.suptitle('Station '+sta,y = 1.025,fontsize=16)
     fig.tight_layout()
-    fig.savefig(sta+'.png',bbox_inches='tight',bbox_extra_artistis=(lgd,st,))
+    fig.savefig(sta+'.png',bbox_inches='tight',bbox_extra_artists=(lgd,st,))
     plt.close()
