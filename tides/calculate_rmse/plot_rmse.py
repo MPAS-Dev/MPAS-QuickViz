@@ -72,24 +72,25 @@ def main(argv):
     nCells = lon_grid.size
     data1 = np.zeros((nCells))
     data2 = np.zeros((nCells))
-    diff = np.zeros((nCells))
     depth = np.zeros((nCells))
+    area = np.zeros((nCells))
     depth[:] = data_nc.variables['bottomDepth'][:]
+    area[:] = data_nc.variables['areaCell'][:]
    
     data1_phase = np.zeros((nCells))
     data2_phase = np.zeros((nCells))
-    diff2 = np.zeros((nCells))
     cell = 0
     rmse_sum = 0
     count = 0
     shallow_rmse_amp = 0.0
     deep_rmse_amp = 0.0
+    areaTotal = 0.0
 
     constituent_list = ['K1','M2','N2','O1','S2']
     constituent_num = 0
     subplot = 0
 
-    # Use these to fix up the plot data ranges
+    # Use these to fix up the plots
     subplot_levels = [[np.linspace(0,0.65,16), np.linspace(0,0.65,16), np.linspace(0,0.13,16), np.linspace(0,0.13,16)], \
                       [np.linspace(0,1.4, 16),  np.linspace(0,1.4,16), np.linspace(0,0.22,16), np.linspace(0,0.22,16)], \
                       [np.linspace(0,0.22,16), np.linspace(0,0.22,16), np.linspace(0,0.05,16),np.linspace(0,0.05, 16)], \
@@ -114,17 +115,23 @@ def main(argv):
         data2_phase[:] = data_nc.variables[constituent+'PhaseTPXO8'][:]*np.pi/180
 
         # Calculate RMSE values
-        rmse_amp = (0.5*(data2**2.0+data1**2.0-2*data2*data1))**0.5
-        diff2 = np.arctan2(np.sin(data1-data2),np.cos(data1-data2))
-        rmse_com = ( 0.5*(data2**2 + data1**2) - data1*data2*np.cos(diff2) )**0.5
+        rmse_amp = 0.5*(data1 + data2)**2
+        rmse_com = 0.5*(data2**2 + data1**2) - data1*data2*np.cos(data2_phase - data1_phase)
 
         # Get rid of WAY too large values
         rmse_amp[:] = rmse_amp[:]*(rmse_amp[:]<100)
         rmse_com[:] = rmse_com[:]*(rmse_com[:]<100)
 
         # Calculate mean (global) values
-        global_rmse_amp = np.mean(rmse_amp)
-        global_rmse_com = np.mean(rmse_com)
+        rmse_amp_sum = 0
+        rmse_com_sum = 0
+        areaTotal = 0
+        for cell in range(0,nCells-1):
+            rmse_amp_sum += rmse_amp[cell]*area[cell]
+            rmse_com_sum += rmse_com[cell]*area[cell]
+            areaTotal += area[cell]
+        global_rmse_amp = np.sqrt(rmse_amp_sum / areaTotal)
+        global_rmse_com = np.sqrt(rmse_com_sum / areaTotal)
 #        print('Global RMSE (Amp) = ', global_rmse_amp)
         print('Global RMSE (Com) = ', global_rmse_com)
 
@@ -132,14 +139,15 @@ def main(argv):
         count = 0
         rmse_amp_sum = 0
         rmse_com_sum = 0
+        areaTotal = 0
         for cell in range(0,nCells-1):
             if abs(lat_grid[cell]) < 66:
                 if (depth[cell] < 1000) and (depth[cell] > 20):
-                    count += 1
-                    rmse_amp_sum += rmse_amp[cell]
-                    rmse_com_sum += rmse_com[cell]
-        shallow_rmse_amp = rmse_amp_sum / float(count)
-        shallow_rmse_com = rmse_com_sum / float(count)
+                    rmse_amp_sum += rmse_amp[cell]*area[cell]
+                    rmse_com_sum += rmse_com[cell]*area[cell]
+                    areaTotal += area[cell]
+        shallow_rmse_amp = np.sqrt(rmse_amp_sum / areaTotal)
+        shallow_rmse_com = np.sqrt(rmse_com_sum / areaTotal)
 #        print('Shallow RMSE (Amp) = ', shallow_rmse_amp)
         print('Shallow RMSE (Com) = ', shallow_rmse_com)
 
@@ -147,18 +155,20 @@ def main(argv):
         count = 0
         rmse_amp_sum = 0
         rmse_com_sum = 0
+        areaTotal = 0
         for cell in range(0,nCells-1):
             if abs(lat_grid[cell]) < 66:
                 if depth[cell] >= 1000:
                     count += 1
-                    rmse_amp_sum += rmse_amp[cell]
-                    rmse_com_sum += rmse_com[cell]
-        deep_rmse_amp = rmse_amp_sum / float(count)
-        deep_rmse_com = rmse_com_sum / float(count)
+                    rmse_amp_sum += rmse_amp[cell]*area[cell]
+                    rmse_com_sum += rmse_com[cell]*area[cell]
+                    areaTotal += area[cell]
+        deep_rmse_amp = np.sqrt(rmse_amp_sum / areaTotal)
+        deep_rmse_com = np.sqrt(rmse_com_sum / areaTotal)
 #        print('Deep RMSE (Amp) = ', deep_rmse_amp)
         print('Deep RMSE (Com) = ', deep_rmse_com)
 
-######## Plot data -- Comment out if you just want to print the values
+#        # Plot data
         fig=plt.figure(figsize=(18,12))
         subplot_title = [constituent+' Amplitude (simulation) [m]', constituent+' Amplitude (TPXO8) [m]', \
                          constituent+' RMSE (Amplitude) [m]', constituent+' RMSE (Complex) [m]']
