@@ -115,7 +115,7 @@ def main(argv):
         data2_phase[:] = data_nc.variables[constituent+'PhaseTPXO8'][:]*np.pi/180
 
         # Calculate RMSE values
-        rmse_amp = 0.5*(data1 + data2)**2
+        rmse_amp = 0.5*(data1 - data2)**2
         rmse_com = 0.5*(data2**2 + data1**2) - data1*data2*np.cos(data2_phase - data1_phase)
 
         # Get rid of WAY too large values
