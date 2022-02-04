@@ -3,6 +3,9 @@
 # Description: Interpolates CFSR atmospheric reanalysis data onto the MPAS-O mesh and 
 #              creates an input file to support time varying atmospheric forcing in the model
 
+# note, the original file jsl_lim24_inv_hrs.nc
+# is available at https://drive.google.com/file/d/1CrMtAbiciJiozzGtZnG4X_VDZLiYW8Uo/view?usp=sharing
+
 import netCDF4
 import matplotlib.pyplot as plt
 import numpy as np

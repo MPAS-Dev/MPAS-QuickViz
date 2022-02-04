@@ -2,6 +2,9 @@
 # Date: April, 2020
 # Description: This function writes time-varying forcing data to an input file for the model run.
 
+# note, the original file jsl_lim24_inv_hrs.nc
+# is available at https://drive.google.com/file/d/1CrMtAbiciJiozzGtZnG4X_VDZLiYW8Uo/view?usp=sharing
+
 import os
 import numpy as np
 import netCDF4
