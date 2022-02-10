@@ -15,6 +15,8 @@ Example call:
 To create the transect_masks.nc file, load e3sm-unified and:
    MpasMaskCreator.x MPAS_mesh.nc  transect_masks.nc -f transect_definitions.geojson
 where the transect_definitions.geojson file includes a sequence of lat/lon points for each transect.
+On LANL IC, example file is at
+/usr/projects/climate/mpeterse/analysis_input_files/geojson_files/SingleRegionAtlanticWTransportTransects.geojson
 """
 
 # ensure plots are rendered on ICC
