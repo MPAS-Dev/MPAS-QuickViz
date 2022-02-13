@@ -1,0 +1,42 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Atlantic Section OSNAP East",
+        "component": "ocean",
+        "tags": "",
+        "author": "Mark Petersen",
+        "object": "transect"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates":
+        [
+            [ -45.0 , 60.0 ],
+            [ -20.0 , 58.0 ],
+            [  -7.0 , 56.0 ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Atlantic Section Greenland-Iceland Ridge N-S (check)",
+        "component": "ocean",
+        "tags": "",
+        "author": "Mark Petersen",
+        "object": "transect"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates":
+        [
+            [ -22.0 , 68.0 ],
+            [ -35.0 , 63.0 ]
+        ]
+      }
+    }
+    ]
+}
