@@ -47,7 +47,8 @@ seasons = ['ANN']
 #transectNames = ['Barents Sea Opening', 'Fram Strait']
 #transectNames = ['Barents Sea Opening', 'Bering Strait', 'Davis Strait',
 #                 'Denmark Strait', 'Fram Strait', 'Iceland-Faroe-Scotland']
-transectNames = ['Atlantic Section OSNAP East']
+#transectNames = ['Atlantic Section OSNAP East']
+transectNames = ['Atlantic Section Greenland-Iceland Ridge N-S (check)']
 
 # Figure details
 figdir = './verticalSections/{}'.format(casename)
@@ -179,15 +180,39 @@ for n in range(nTransects):
     lonEdges = mesh.lonEdge.sel(nEdges=transectEdges-1).values
     latEdges = mesh.latEdge.sel(nEdges=transectEdges-1).values
     lonEdges[lonEdges>np.pi] = lonEdges[lonEdges>np.pi] - 2*np.pi
+
+    # load layer thickness
+    modelfile = 'init_hMin1_14.nc'
+    ncid = Dataset(modelfile, 'r')
+    hOnCell1 = ncid.variables['layerThickness'][0, cellsOnEdge1-1, :]
+    hOnCell2 = ncid.variables['layerThickness'][0, cellsOnEdge2-1, :]
+    BDOnCell1 = ncid.variables['bottomDepth'][cellsOnEdge1-1]
+    BDOnCell2 = ncid.variables['bottomDepth'][cellsOnEdge2-1]
+    LTh = np.nanmean(np.array([hOnCell1, hOnCell2]), axis=0)
+    bD = np.nanmean(np.array([BDOnCell1, BDOnCell2]), axis=0)
+
     dist = [0]
+    zMid = np.zeros([ntransectEdges,nlevels])
+    print(np.shape(zMid))
     for iEdge in range(1, ntransectEdges):
         dx = (lonEdges[iEdge]-lonEdges[iEdge-1]) * np.cos(0.5*(latEdges[iEdge]+latEdges[iEdge-1]))
         dy = latEdges[iEdge]-latEdges[iEdge-1]
         dist.append(earthRadius * np.sqrt(dx**2 + dy**2))
+        zMid[iEdge,0] =  0.5*LTh[iEdge,0]
+        for k in range(1,nlevels):
+           zMid[iEdge,k] =  zMid[iEdge,k-1] + 0.5*(LTh[iEdge,k-1] + LTh[iEdge,k])
+    print('LTh',np.shape(LTh))
+    #print(LTh)
+    print('zMid',np.shape(zMid))
+    #print(zMid)
+    print('dist',np.shape(dist))
     dist = np.cumsum(dist)
     [x, y] = np.meshgrid(dist, z)
     x = x.T
-    y = y.T
+    y = zMid
+    print('x',np.shape(x))
+    print('y',np.shape(y))
+    
     # Check lon,lat of edges to make sure we have the right edges
     #print(180.0/np.pi*lonEdges)
     #print(180.0/np.pi*latEdges)
@@ -205,8 +230,8 @@ for n in range(nTransects):
         #print('   season: ', s)
         #modelfile = glob.glob('{}/mpaso_{}_{:04d}??_{:04d}??_climo.nc'.format(
         #            modeldir, s, climoyearStart, climoyearEnd))[0]
-        modelfile = 'init_hMin1_14.nc'
-        ncid = Dataset(modelfile, 'r')
+        #modelfile = 'init_hMin1_14.nc'
+        #ncid = Dataset(modelfile, 'r')
         ## Try loading in normalVelocity (on edge centers)
         try:
             vel = ncid.variables['timeMonthly_avg_normalVelocity'][0, transectEdges-1, :]
@@ -231,13 +256,16 @@ for n in range(nTransects):
         temp = np.nanmean(np.array([tempOnCell1, tempOnCell2]), axis=0)
         salt = np.nanmean(np.array([saltOnCell1, saltOnCell2]), axis=0)
 
+
+
         # Compute sigma's
         SA = gsw.SA_from_SP(salt, pressure[np.newaxis, :], lonmean, latmean)
         CT = gsw.CT_from_pt(SA, temp)
         sigma2 = gsw.density.sigma2(SA, CT)
         sigma0 = gsw.density.sigma0(SA, CT)
 
-        zmax = z[np.max(maxLevelEdge)]
+        #zmax = z[np.max(maxLevelEdge)]
+        zmax = np.max(bD)
 
         # Plot sections
         #  T first
@@ -250,6 +278,7 @@ for n in range(nTransects):
         ax = fig.add_subplot()
         ax.set_facecolor('darkgrey')
         cf = ax.contourf(x, y, temp, cmap=colormapT, norm=cnormT, levels=clevelsT, extend='max')
+        #cf = ax.scatter(x, y, temp, cmap=colormapT, norm=cnormT)
         #cf = ax.pcolormesh(x, y, temp, cmap=colormapT, norm=cnormT)
         cax, kw = mpl.colorbar.make_axes(ax, location='right', pad=0.05, shrink=0.9)
         cbar = plt.colorbar(cf, cax=cax, ticks=clevelsT, **kw)
