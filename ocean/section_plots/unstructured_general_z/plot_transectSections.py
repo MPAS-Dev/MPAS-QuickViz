@@ -182,12 +182,25 @@ for n in range(nTransects):
     lonEdges[lonEdges>np.pi] = lonEdges[lonEdges>np.pi] - 2*np.pi
 
     # load layer thickness
+    #modelfile = 'init_normal.nc'
     modelfile = 'init_hMin1_14.nc'
+    #modelfile = 'init8.nc'
+    rr = '/lcrc/group/e3sm/ac.mpetersen/scratch/anvil/'
+    run1 = '20211006g.normal.WCYCL1850.ne30pg2_EC30to60E2r2.sigmaz.anvil/'
+    run2 = '20211006f.init8.WCYCL1850.ne30pg2_EC30to60E2r2.sigmaz.anvil/'
+    run3 = '211006h.sigmaz-hMin1.WCYCL1850.ne30pg2_EC30to60E2r2.anvil/'
+    subdir = 'yrs21-30/clim/mpas/avg/unmasked_EC30to60E2r2/'
+    climofile = 'mpaso_JFM_002101_003003_climo.nc'
+    modelfile = rr + run1 + subdir + climofile
+    print(modelfile)
+    pre = 'timeMonthly_avg_'
+    preT = pre + 'activeTracers_'
+
     ncid = Dataset(modelfile, 'r')
-    hOnCell1 = ncid.variables['layerThickness'][0, cellsOnEdge1-1, :]
-    hOnCell2 = ncid.variables['layerThickness'][0, cellsOnEdge2-1, :]
-    BDOnCell1 = ncid.variables['bottomDepth'][cellsOnEdge1-1]
-    BDOnCell2 = ncid.variables['bottomDepth'][cellsOnEdge2-1]
+    hOnCell1 = ncid.variables[pre + 'layerThickness'][0, cellsOnEdge1-1, :]
+    hOnCell2 = ncid.variables[pre + 'layerThickness'][0, cellsOnEdge2-1, :]
+    BDOnCell1 = mesh.variables['bottomDepth'][cellsOnEdge1-1]
+    BDOnCell2 = mesh.variables['bottomDepth'][cellsOnEdge2-1]
     LTh = np.nanmean(np.array([hOnCell1, hOnCell2]), axis=0)
     bD = np.nanmean(np.array([BDOnCell1, BDOnCell2]), axis=0)
 
@@ -241,10 +254,10 @@ for n in range(nTransects):
             print('*** normalVelocity variable not found: skipping it...')
             vel = None
         # Load in T and S (on cellsOnEdge centers)
-        tempOnCell1 = ncid.variables['temperature'][0, cellsOnEdge1-1, :]
-        tempOnCell2 = ncid.variables['temperature'][0, cellsOnEdge2-1, :]
-        saltOnCell1 = ncid.variables['salinity'][0, cellsOnEdge1-1, :]
-        saltOnCell2 = ncid.variables['salinity'][0, cellsOnEdge2-1, :]
+        tempOnCell1 = ncid.variables[preT + 'temperature'][0, cellsOnEdge1-1, :]
+        tempOnCell2 = ncid.variables[preT + 'temperature'][0, cellsOnEdge2-1, :]
+        saltOnCell1 = ncid.variables[preT + 'salinity'][0, cellsOnEdge1-1, :]
+        saltOnCell2 = ncid.variables[preT + 'salinity'][0, cellsOnEdge2-1, :]
         ncid.close()
 
         # Mask T,S values that fall on land and topography
