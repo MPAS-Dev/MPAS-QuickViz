@@ -4,7 +4,7 @@
     {
       "type": "Feature",
       "properties": {
-        "name": "Atlantic Section OSNAP East",
+        "name": "SNAP East",
         "component": "ocean",
         "tags": "",
         "author": "Mark Petersen",
@@ -23,7 +23,7 @@
     {
       "type": "Feature",
       "properties": {
-        "name": "Atlantic Section Denmark Strait N-S",
+        "name": "Denmark Strait N-S",
         "component": "ocean",
         "tags": "",
         "author": "Mark Petersen",

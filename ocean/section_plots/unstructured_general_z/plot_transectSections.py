@@ -1,14 +1,36 @@
 #!/usr/bin/env python
 """
-
 Plot vertical sections (annual and seasonal climatologies),
 given a certain transect mask
-
 """
+############################## transects
+#transectNames = ['all']
+#transectNames = ['Barents Sea Opening', 'Fram Strait']
+#transectNames = ['Barents Sea Opening', 'Bering Strait', 'Davis Strait',
+#                 'Denmark Strait', 'Fram Strait', 'Iceland-Faroe-Scotland']
+transectNames = ['Denmark Strait N-S']
+#transectNames = ['OSNAP East']
 
-# ensure plots are rendered on ICC
-from __future__ import absolute_import, division, print_function, \
-    unicode_literals
+############################## months or seasons
+#seasons = ['JFM', 'JAS', 'ANN']
+seasons = ['ANN']
+
+############################## model files, run dirs
+modeldir = '/lustre/scratch4/turquoise/mpeterse/runs/211006_sigma-z_meshes/ocean/global_ocean/EC30to60/PHC/init/hMin1'
+meshfile = 'mesh.nc'
+maskfile = 'mask.nc'
+casename = 'E3SM60to30' # no spaces
+climoyearStart = 21
+climoyearEnd = 30 
+
+############################## variables
+# not added yet
+
+############################## contours
+sigma0contours = [24.0, 25.0, 26.0, 27.0, 27.2, 27.4, 27.6, 27.7, 27.75, 27.8, 27.82,  27.84, 27.86, 27.87, 27.88, 27.9, 27.95, 28.0, 28.05]
+
+#from __future__ import absolute_import, division, print_function, \
+#    unicode_literals
 import os
 import glob
 import matplotlib as mpl
@@ -25,30 +47,6 @@ from mpas_analysis.shared.io.utility import decode_strings
 import gsw
 
 earthRadius = 6367.44
-
-meshfile = 'mesh.nc'
-maskfile = 'mask.nc'
-casename = 'E3SM60to30' # no spaces
-climoyearStart = 40
-climoyearEnd = 59
-modeldir = '/lustre/scratch4/turquoise/mpeterse/runs/211006_sigma-z_meshes/ocean/global_ocean/EC30to60/PHC/init/hMin1'
-#seasons = ['JFM', 'JAS', 'ANN']
-seasons = ['ANN']
-
-## Options for transect names if maskfile=*_standardTransportSections.nc
-# "Africa-Ant", "Agulhas", "Antilles Inflow", "Barents Sea Opening", "Bering Strait", "Davis Strait",
-# "Drake Passage", "Florida-Bahamas", "Florida-Cuba", "Fram Strait", "Indonesian Throughflow",
-# "Lancaster Sound", "Mona Passage", "Mozambique Channel", "Nares Strait", "Tasmania-Ant", "Windward Passage"
-## Options for transect names if maskfile=*_arcticSections.nc
-# "Barents Sea Opening", "Bering Strait", "Davis Strait", "Denmark Strait", "Fram Strait", 
-# "Hudson Bay-Labrador Sea", "Iceland-Faroe-Scotland", "Lancaster Sound", "Nares Strait",
-# "OSNAP section East", "OSNAP section West"
-#transectNames = ['all']
-#transectNames = ['Barents Sea Opening', 'Fram Strait']
-#transectNames = ['Barents Sea Opening', 'Bering Strait', 'Davis Strait',
-#                 'Denmark Strait', 'Fram Strait', 'Iceland-Faroe-Scotland']
-#transectNames = ['Atlantic Section OSNAP East']; shortSection = 'OSNAPEast'
-transectNames = ['Atlantic Section Denmark Strait N-S']; shortSection = 'Den-NS'
 
 # Figure details
 figdir = './verticalSections/{}'.format(casename)
@@ -109,7 +107,6 @@ cnormV = mpl.colors.BoundaryNorm(clevelsV, colormapV.N)
 #sigma2contours = [35, 36, 36.5, 36.8, 37, 37.1, 37.2, 37.25, 37.44, 37.52, 37.6]
 sigma2contours = None
 #sigma0contours = np.arange(26.0, 28.0, 0.2) # Good for OSNAP, but not for all arcticSections
-sigma0contours = [24.0, 25.0, 26.0, 27.0, 27.2, 27.4, 27.6, 27.7, 27.75, 27.8, 27.82,  27.84, 27.86, 27.87, 27.88, 27.9, 27.95, 28.0, 28.05]
 #sigma0contours = None
 
 # Load in MPAS mesh and transect mask file
@@ -291,7 +288,7 @@ for n in range(nTransects):
                    transectName, s, casename, climoyearStart, climoyearEnd)
         figfile = '{}/Temp_{}_{}_{}_years{:04d}-{:04d}.png'.format(
                   figdir, transectName.replace(' ', ''), casename, s, climoyearStart, climoyearEnd)
-        figfile = 'temperature_' + shortSection + '_' + shortName + '_' + seasonName + '.png'
+        figfile = 'temperature_' + transectName.replace(' ', '') + '_' + shortName + '_' + seasonName + '.png'
         fig = plt.figure(figsize=figsize, dpi=figdpi)
         ax = fig.add_subplot()
         ax.set_facecolor('darkgrey')
@@ -325,7 +322,7 @@ for n in range(nTransects):
                    transectName, s, casename, climoyearStart, climoyearEnd)
         figfile = '{}/Salt_{}_{}_{}_years{:04d}-{:04d}.png'.format(
                   figdir, transectName.replace(' ', ''), casename, s, climoyearStart, climoyearEnd)
-        figfile = 'salinity_' + shortSection + '_' + shortName + '_' + seasonName + '.png'
+        figfile = 'salinity_' + transectName.replace(' ', '') + '_' + shortName + '_' + seasonName + '.png'
         fig = plt.figure(figsize=figsize, dpi=figdpi)
         ax = fig.add_subplot()
         ax.set_facecolor('darkgrey')
