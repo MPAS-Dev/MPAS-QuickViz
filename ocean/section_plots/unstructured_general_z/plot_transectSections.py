@@ -47,8 +47,8 @@ seasons = ['ANN']
 #transectNames = ['Barents Sea Opening', 'Fram Strait']
 #transectNames = ['Barents Sea Opening', 'Bering Strait', 'Davis Strait',
 #                 'Denmark Strait', 'Fram Strait', 'Iceland-Faroe-Scotland']
-#transectNames = ['Atlantic Section OSNAP East']
-transectNames = ['Atlantic Section Greenland-Iceland Ridge N-S (check)']
+#transectNames = ['Atlantic Section OSNAP East']; shortSection = 'OSNAPEast'
+transectNames = ['Atlantic Section Denmark Strait N-S']; shortSection = 'Den-NS'
 
 # Figure details
 figdir = './verticalSections/{}'.format(casename)
@@ -60,8 +60,12 @@ colorIndices0 = [0, 10, 28, 57, 85, 113, 125, 142, 155, 170, 198, 227, 242, 255]
 #clevelsT = [-2.0, -1.8, -1.5, -1.0, -0.5, 0.0, 0.5, 2.0, 4.0, 6.0, 8.0, 10., 12.]
 #clevelsS = [30.0, 31.0, 32.0, 33.0, 33.5, 34.0, 34.5, 34.8, 34.85, 34.9, 34.95, 35.0, 35.5]
 # Better for OSNAP:
-clevelsT = [-1.0, -0.5, 0.0, 0.5, 2.0, 2.5, 3.0, 3.5, 4.0, 6.0, 8., 10., 12.]
-clevelsS = [31.0, 33.0, 33.5, 33.8, 34.2, 34.6, 34.8, 34.85, 34.9, 34.95, 35.0, 35.2, 35.5]
+#clevelsT = [-1.0, -0.5, 0.0, 0.5, 2.0, 2.5, 3.0, 3.5, 4.0, 6.0, 8., 10., 12.]
+clevelsT = np.linspace(2.0, 6.0, 13)
+#clevelsS = [31.0, 33.0, 33.5, 33.8, 34.2, 34.6, 34.8, 34.85, 34.9, 34.95, 35.0, 35.2, 35.5]
+clevelsS = np.linspace(34.7, 35.2, 13)
+print('colorIndices0',np.shape(colorIndices0))
+print('clevelsS',clevelsS,np.shape(clevelsS))
 clevelsV = [-0.25, -0.2, -0.15, -0.1, -0.02, 0.0, 0.02, 0.1, 0.2, 0.3, 0.5]
 colormapT = plt.get_cmap('RdBu_r')
 colormapS = cmocean.cm.haline
@@ -105,7 +109,7 @@ cnormV = mpl.colors.BoundaryNorm(clevelsV, colormapV.N)
 #sigma2contours = [35, 36, 36.5, 36.8, 37, 37.1, 37.2, 37.25, 37.44, 37.52, 37.6]
 sigma2contours = None
 #sigma0contours = np.arange(26.0, 28.0, 0.2) # Good for OSNAP, but not for all arcticSections
-sigma0contours = [24.0, 25.0, 26.0, 27.0, 27.2, 27.4, 27.6, 27.8, 28.0]
+sigma0contours = [24.0, 25.0, 26.0, 27.0, 27.2, 27.4, 27.6, 27.7, 27.75, 27.8, 27.82,  27.84, 27.86, 27.87, 27.88, 27.9, 27.95, 28.0, 28.05]
 #sigma0contours = None
 
 # Load in MPAS mesh and transect mask file
@@ -186,12 +190,13 @@ for n in range(nTransects):
     modelfile = 'init_hMin1_14.nc'
     #modelfile = 'init8.nc'
     rr = '/lcrc/group/e3sm/ac.mpetersen/scratch/anvil/'
-    run1 = '20211006g.normal.WCYCL1850.ne30pg2_EC30to60E2r2.sigmaz.anvil/'
-    run2 = '20211006f.init8.WCYCL1850.ne30pg2_EC30to60E2r2.sigmaz.anvil/'
-    run3 = '211006h.sigmaz-hMin1.WCYCL1850.ne30pg2_EC30to60E2r2.anvil/'
+    simName = '20211006g.normal.WCYCL1850.ne30pg2_EC30to60E2r2.sigmaz.anvil/'; shortName='z-level'
+    #simName = '20211006f.init8.WCYCL1850.ne30pg2_EC30to60E2r2.sigmaz.anvil/'; shortName='sigma-z_8'
+    #simName = '211006h.sigmaz-hMin1.WCYCL1850.ne30pg2_EC30to60E2r2.anvil/'; shortName='sigma-z_14'
     subdir = 'yrs21-30/clim/mpas/avg/unmasked_EC30to60E2r2/'
-    climofile = 'mpaso_JFM_002101_003003_climo.nc'
-    modelfile = rr + run1 + subdir + climofile
+    climofile = 'mpaso_JFM_002101_003003_climo.nc'; seasonName = 'JFM'
+    climofile = 'mpaso_JAS_002107_003009_climo.nc'; seasonName = 'JAS'
+    modelfile = rr + simName + subdir + climofile
     print(modelfile)
     pre = 'timeMonthly_avg_'
     preT = pre + 'activeTracers_'
@@ -214,17 +219,17 @@ for n in range(nTransects):
         zMid[iEdge,0] =  0.5*LTh[iEdge,0]
         for k in range(1,nlevels):
            zMid[iEdge,k] =  zMid[iEdge,k-1] + 0.5*(LTh[iEdge,k-1] + LTh[iEdge,k])
-    print('LTh',np.shape(LTh))
+    #print('LTh',np.shape(LTh))
     #print(LTh)
-    print('zMid',np.shape(zMid))
+    #print('zMid',np.shape(zMid))
     #print(zMid)
-    print('dist',np.shape(dist))
+    #print('dist',np.shape(dist))
     dist = np.cumsum(dist)
     [x, y] = np.meshgrid(dist, z)
     x = x.T
     y = zMid
-    print('x',np.shape(x))
-    print('y',np.shape(y))
+    #print('x',np.shape(x))
+    #print('y',np.shape(y))
     
     # Check lon,lat of edges to make sure we have the right edges
     #print(180.0/np.pi*lonEdges)
@@ -286,7 +291,7 @@ for n in range(nTransects):
                    transectName, s, casename, climoyearStart, climoyearEnd)
         figfile = '{}/Temp_{}_{}_{}_years{:04d}-{:04d}.png'.format(
                   figdir, transectName.replace(' ', ''), casename, s, climoyearStart, climoyearEnd)
-        figfile = 'init_hMin1_14.png'
+        figfile = 'temperature_' + shortSection + '_' + shortName + '_' + seasonName + '.png'
         fig = plt.figure(figsize=figsize, dpi=figdpi)
         ax = fig.add_subplot()
         ax.set_facecolor('darkgrey')
@@ -302,7 +307,7 @@ for n in range(nTransects):
             cb = plt.clabel(cs, levels=sigma2contours, inline=True, inline_spacing=2, fmt='%2.1f', fontsize=9)
         if sigma0contours is not None:
             cs = ax.contour(x, y, sigma0, sigma0contours, colors='k', linewidths=1.5)
-            cb = plt.clabel(cs, levels=sigma0contours, inline=True, inline_spacing=2, fmt='%2.1f', fontsize=9)
+            cb = plt.clabel(cs, levels=sigma0contours, inline=True, inline_spacing=2, fmt='%5.2f', fontsize=8)
         ax.set_ylim(0, zmax)
         ax.set_xlabel('Distance (km)', fontsize=12, fontweight='bold')
         ax.set_ylabel('Depth (m)', fontsize=12, fontweight='bold')
@@ -320,6 +325,7 @@ for n in range(nTransects):
                    transectName, s, casename, climoyearStart, climoyearEnd)
         figfile = '{}/Salt_{}_{}_{}_years{:04d}-{:04d}.png'.format(
                   figdir, transectName.replace(' ', ''), casename, s, climoyearStart, climoyearEnd)
+        figfile = 'salinity_' + shortSection + '_' + shortName + '_' + seasonName + '.png'
         fig = plt.figure(figsize=figsize, dpi=figdpi)
         ax = fig.add_subplot()
         ax.set_facecolor('darkgrey')
@@ -333,7 +339,7 @@ for n in range(nTransects):
             cb = plt.clabel(cs, levels=sigma2contours, inline=True, inline_spacing=2, fmt='%2.1f', fontsize=9)
         if sigma0contours is not None:
             cs = ax.contour(x, y, sigma0, sigma0contours, colors='k', linewidths=1.5)
-            cb = plt.clabel(cs, levels=sigma0contours, inline=True, inline_spacing=2, fmt='%2.1f', fontsize=9)
+            cb = plt.clabel(cs, levels=sigma0contours, inline=True, inline_spacing=2, fmt='%5.2f', fontsize=8)
         ax.set_ylim(0, zmax)
         ax.set_xlabel('Distance (km)', fontsize=12, fontweight='bold')
         ax.set_ylabel('Depth (m)', fontsize=12, fontweight='bold')
