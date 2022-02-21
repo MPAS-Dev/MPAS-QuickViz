@@ -5,7 +5,7 @@ given a certain transect mask
 """
 ############################## transects
 transectNames = ['all']
-#transectNames = ['Denmark Strait N-S']
+transectNames = ['Faroe Bank Channel Along']
 #transectNames = ['OSNAP East']
 #transectNames = ['Barents Sea Opening', 'Fram Strait']
 #transectNames = ['Barents Sea Opening', 'Bering Strait', 'Davis Strait',
@@ -21,12 +21,12 @@ simName = ['20211006g.normal.WCYCL1850.ne30pg2_EC30to60E2r2.sigmaz.anvil/',
   '211006h.sigmaz-hMin1.WCYCL1850.ne30pg2_EC30to60E2r2.anvil/']
 shortName= ['z-level',
   'sigma-z_14']
+meshfile = ['init_zlevel.nc','init_hMin1_14.nc']
 # extra simName = '20211006f.init8.WCYCL1850.ne30pg2_EC30to60E2r2.sigmaz.anvil/'; shortName='sigma-z_8'
 subdir = 'yrs21-30/clim/mpas/avg/unmasked_EC30to60E2r2/'
 climofile = 'mpaso_JFM_002101_003003_climo.nc'; seasonName = 'JFM'
 climofile = 'mpaso_JAS_002107_003009_climo.nc'; seasonName = 'JAS'
 pre = 'timeMonthly_avg_'
-meshfile = 'mesh.nc'
 maskfile = 'mask.nc'
 casename = 'E3SM60to30' # no spaces
 climoyearStart = 21
@@ -69,10 +69,10 @@ colorIndices0 = [0, 10, 28, 57, 85, 113, 125, 142, 155, 170, 198, 227, 242, 255]
 # Better for OSNAP:
 #clevelsT = [-1.0, -0.5, 0.0, 0.5, 2.0, 2.5, 3.0, 3.5, 4.0, 6.0, 8., 10., 12.]
 clevelsT = np.linspace(2.0, 6.0, 13)
-#clevelsS = [31.0, 33.0, 33.5, 33.8, 34.2, 34.6, 34.8, 34.85, 34.9, 34.95, 35.0, 35.2, 35.5]
-clevelsS = np.linspace(34.7, 35.2, 13)
-print('colorIndices0',np.shape(colorIndices0))
-print('clevelsS',clevelsS,np.shape(clevelsS))
+clevelsS = [31.0, 33.0, 33.5, 33.8, 34.2, 34.6, 34.8, 34.85, 34.9, 34.95, 35.0, 35.2, 35.5]
+#clevelsS = np.linspace(34.7, 35.2, 13)
+#print('colorIndices0',np.shape(colorIndices0))
+#print('clevelsS',clevelsS,np.shape(clevelsS))
 clevelsV = [-0.25, -0.2, -0.15, -0.1, -0.02, 0.0, 0.02, 0.1, 0.2, 0.3, 0.5]
 colormapT = plt.get_cmap('RdBu_r')
 colormapS = cmocean.cm.haline
@@ -119,7 +119,7 @@ sigma2contours = None
 #sigma0contours = None
 
 # Load in MPAS mesh and transect mask file
-mesh = xr.open_dataset(meshfile)
+mesh = xr.open_dataset(meshfile[0])
 mask = xr.open_dataset(maskfile)
 
 allTransects = decode_strings(mask.transectNames)
@@ -151,38 +151,6 @@ for iTransect in range(nTransects):
     # Create a land/topo mask for cellsOnEdge
     cellsOnEdge1 = cellsOnEdge[:, 0]
     cellsOnEdge2 = cellsOnEdge[:, 1]
-    maxLevelCell1 = mesh.maxLevelCell.sel(nCells=cellsOnEdge1-1).values
-    maxLevelCell2 = mesh.maxLevelCell.sel(nCells=cellsOnEdge2-1).values
-    # Initialize mask to True everywhere
-    cellMask1 = np.ones((ntransectEdges, nlevels), bool)
-    cellMask2 = np.ones((ntransectEdges, nlevels), bool)
-    for iEdge in range(ntransectEdges):
-        # These become False if the second expression is negated (land cells)
-        cellMask1[iEdge, :] = np.logical_and(cellMask1[iEdge, :],
-                                             cellsOnEdge1[iEdge, np.newaxis] > 0)
-        cellMask2[iEdge, :] = np.logical_and(cellMask2[iEdge, :],
-                                             cellsOnEdge2[iEdge, np.newaxis] > 0)
-        # These become False if the second expression is negated (topography cells)
-        cellMask1[iEdge, :] = np.logical_and(cellMask1[iEdge, :],
-                                             range(1, nlevels+1) <= maxLevelCell1[iEdge])
-        cellMask2[iEdge, :] = np.logical_and(cellMask2[iEdge, :],
-                                             range(1, nlevels+1) <= maxLevelCell2[iEdge])
-
-    # Create a land/topo mask for transectEdges
-    maxLevelEdge = []
-    for iEdge in range(ntransectEdges):
-        if cellsOnEdge1[iEdge]==0:
-            maxLevelEdge.append(maxLevelCell2[iEdge])
-        elif cellsOnEdge2[iEdge]==0:
-            maxLevelEdge.append(maxLevelCell1[iEdge])
-        else:
-            maxLevelEdge.append(np.min([maxLevelCell1[iEdge], maxLevelCell2[iEdge]]))
-    # Initialize mask to True everywhere
-    edgeMask = np.ones((ntransectEdges, nlevels), bool)
-    for iEdge in range(ntransectEdges):
-        # These become False if the second expression is negated (topography cells)
-        edgeMask[iEdge, :] = np.logical_and(edgeMask[iEdge, :],
-                                            range(1, nlevels+1) <= maxLevelEdge[iEdge])
 
     # Get edge signs for across-edge velocity direction
     edgeSigns = mask.transectEdgeMaskSigns.sel(nEdges=transectEdges-1, nTransects=transectIndex).values
@@ -233,6 +201,41 @@ for iTransect in range(nTransects):
                 for k in range(1,nlevels):
                    zMid[iEdge,k] =  zMid[iEdge,k-1] + 0.5*(LTh[iEdge,k-1] + LTh[iEdge,k])
             y = zMid
+
+            meshSim = xr.open_dataset(meshfile[iSim])
+            maxLevelCell1 = meshSim.maxLevelCell.sel(nCells=cellsOnEdge1-1).values
+            maxLevelCell2 = meshSim.maxLevelCell.sel(nCells=cellsOnEdge2-1).values
+            xr.Dataset.close(meshSim)
+            # Initialize mask to True everywhere
+            cellMask1 = np.ones((ntransectEdges, nlevels), bool)
+            cellMask2 = np.ones((ntransectEdges, nlevels), bool)
+            for iEdge in range(ntransectEdges):
+                # These become False if the second expression is negated (land cells)
+                cellMask1[iEdge, :] = np.logical_and(cellMask1[iEdge, :],
+                                                     cellsOnEdge1[iEdge, np.newaxis] > 0)
+                cellMask2[iEdge, :] = np.logical_and(cellMask2[iEdge, :],
+                                                     cellsOnEdge2[iEdge, np.newaxis] > 0)
+                # These become False if the second expression is negated (topography cells)
+                cellMask1[iEdge, :] = np.logical_and(cellMask1[iEdge, :],
+                                                     range(1, nlevels+1) <= maxLevelCell1[iEdge])
+                cellMask2[iEdge, :] = np.logical_and(cellMask2[iEdge, :],
+                                                     range(1, nlevels+1) <= maxLevelCell2[iEdge])
+
+            # Create a land/topo mask for transectEdges
+            maxLevelEdge = []
+            for iEdge in range(ntransectEdges):
+                if cellsOnEdge1[iEdge]==0:
+                    maxLevelEdge.append(maxLevelCell2[iEdge])
+                elif cellsOnEdge2[iEdge]==0:
+                    maxLevelEdge.append(maxLevelCell1[iEdge])
+                else:
+                    maxLevelEdge.append(np.min([maxLevelCell1[iEdge], maxLevelCell2[iEdge]]))
+            # Initialize mask to True everywhere
+            edgeMask = np.ones((ntransectEdges, nlevels), bool)
+            for iEdge in range(ntransectEdges):
+                # These become False if the second expression is negated (topography cells)
+                edgeMask[iEdge, :] = np.logical_and(edgeMask[iEdge, :],
+                                                    range(1, nlevels+1) <= maxLevelEdge[iEdge])
             #print('   season: ', s)
             #modelfile = glob.glob('{}/mpaso_{}_{:04d}??_{:04d}??_climo.nc'.format(
             #            modeldir, iMonth, climoyearStart, climoyearEnd))[0]
@@ -260,8 +263,11 @@ for iTransect in range(nTransects):
             saltOnCell1 = np.ma.masked_array(saltOnCell1, ~cellMask1)
             saltOnCell2 = np.ma.masked_array(saltOnCell2, ~cellMask2)
             # Interpolate T,S values onto edges
-            temp = np.nanmean(np.array([tempOnCell1, tempOnCell2]), axis=0)
-            salt = np.nanmean(np.array([saltOnCell1, saltOnCell2]), axis=0)
+            #temp = np.nanmean(np.ma.array([tempOnCell1, tempOnCell2]), axis=0)
+            #salt = np.nanmean(np.ma.array([saltOnCell1, saltOnCell2]), axis=0)
+            temp = np.nanmean(np.ma.array([tempOnCell1, tempOnCell2]), axis=0)
+            salt = np.nanmean(np.ma.array([saltOnCell1, saltOnCell2]), axis=0)
+            print('np.ma.min(salt)',np.ma.min(salt))
 
             # Compute sigma's
             SA = gsw.SA_from_SP(salt, pressure[np.newaxis, :], lonmean, latmean)
@@ -316,6 +322,14 @@ for iTransect in range(nTransects):
             fig = plt.figure(figsize=figsize, dpi=figdpi)
             ax = fig.add_subplot()
             ax.set_facecolor('darkgrey')
+            # new mrp for colormap
+            #if iSim<3: #==1:
+            #    clevelsS = np.linspace(np.ma.min(salt), np.ma.max(salt), 13)
+            #    colormapS = cols.ListedColormap(colormapS(colorIndices))
+            #    colormapS.set_under(underColor)
+            #    colormapS.set_over(overColor)
+            #    cnormS = mpl.colors.BoundaryNorm(clevelsS, colormapS.N)
+                # end new mrp
             cf = ax.contourf(x, y, salt, cmap=colormapS, norm=cnormS, levels=clevelsS, extend='max')
             cax, kw = mpl.colorbar.make_axes(ax, location='right', pad=0.05, shrink=0.9)
             cbar = plt.colorbar(cf, cax=cax, ticks=clevelsS, **kw)

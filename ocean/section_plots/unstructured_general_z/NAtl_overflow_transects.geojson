@@ -1258,7 +1258,7 @@
     {
       "type": "Feature",
       "properties": {
-        "name": "Faroe Bank Channel along",
+        "name": "Faroe Bank Channel Along",
         "component": "ocean",
         "tags": "",
         "author": "Mark Petersen",
@@ -1289,7 +1289,7 @@
     {
       "type": "Feature",
       "properties": {
-        "name": "Faroe Shetland Channel along",
+        "name": "Faroe Shetland Channel Along",
         "component": "ocean",
         "tags": "",
         "author": "Mark Petersen",
