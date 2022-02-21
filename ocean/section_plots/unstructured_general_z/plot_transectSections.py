@@ -28,7 +28,7 @@ climofile = 'mpaso_JFM_002101_003003_climo.nc'; seasonName = 'JFM'
 climofile = 'mpaso_JAS_002107_003009_climo.nc'; seasonName = 'JAS'
 pre = 'timeMonthly_avg_'
 maskfile = 'mask.nc'
-casename = 'E3SM60to30' # no spaces
+casename = ''; 'E3SM60to30' # no spaces
 climoyearStart = 21
 climoyearEnd = 30 
 
@@ -61,7 +61,7 @@ earthRadius = 6367.44
 figdir = './verticalSections/{}'.format(casename)
 if not os.path.isdir(figdir):
     os.makedirs(figdir)
-figsize = (10, 6)
+figsize = (20, 12)
 figdpi = 300
 colorIndices0 = [0, 10, 28, 57, 85, 113, 125, 142, 155, 170, 198, 227, 242, 255]
 #clevelsT = [-2.0, -1.8, -1.5, -1.0, -0.5, 0.0, 0.5, 2.0, 4.0, 6.0, 8.0, 10., 12.]
@@ -188,6 +188,7 @@ for iTransect in range(nTransects):
 
     # Load in T, S, and normalVelocity for each season, and plot them
     for iMonth in [1]: #months:
+        fig = plt.figure(figsize=figsize, dpi=figdpi)
         for iSim in range(len(simName)):
             modelfile = rr + simName[iSim] + subdir + climofile
             ncid = Dataset(modelfile, 'r')
@@ -282,11 +283,10 @@ for iTransect in range(nTransects):
             #  T first
             figtitle = 'Temperature ({}), {} ({}, years={}-{})'.format(
                        transectName, iMonth, casename, climoyearStart, climoyearEnd)
-            figfile = '{}/Temp_{}_{}_{}_years{:04d}-{:04d}.png'.format(
-                      figdir, transectName.replace(' ', ''), casename, iMonth, climoyearStart, climoyearEnd)
-            figfile = 'figs/temperature_' + transectName.replace(' ', '') + '_' + shortName[iSim] + '_' + seasonName + '.png'
-            fig = plt.figure(figsize=figsize, dpi=figdpi)
-            ax = fig.add_subplot()
+            # figfile = '{}/Temp_{}_{}_{}_years{:04d}-{:04d}.png'.format(
+            #           figdir, transectName.replace(' ', ''), casename, iMonth, climoyearStart, climoyearEnd)
+            # figfile = 'figs/temperature_' + transectName.replace(' ', '') + '_' + shortName[iSim] + '_' + seasonName + '.png'
+            ax = plt.subplot(2,2,iSim*2+1)
             ax.set_facecolor('darkgrey')
             cf = ax.contourf(x, y, temp, cmap=colormapT, norm=cnormT, levels=clevelsT, extend='max')
             #cf = ax.scatter(x, y, temp, cmap=colormapT, norm=cnormT)
@@ -310,17 +310,16 @@ for iTransect in range(nTransects):
             ax.annotate('lat={:5.2f}'.format(180.0/np.pi*latEdges[-1]), xy=(1, -0.1), xycoords='axes fraction', ha='center', va='bottom')
             ax.annotate('lon={:5.2f}'.format(180.0/np.pi*lonEdges[-1]), xy=(1, -0.15), xycoords='axes fraction', ha='center', va='bottom')
             ax.invert_yaxis()
-            plt.savefig(figfile, bbox_inches='tight')
-            plt.close()
+            #plt.savefig(figfile, bbox_inches='tight')
+            #plt.close()
 
             #  then S
             figtitle = 'Salinity ({}), {} ({}, years={}-{})'.format(
                        transectName, iMonth, casename, climoyearStart, climoyearEnd)
-            figfile = '{}/Salt_{}_{}_{}_years{:04d}-{:04d}.png'.format(
-                      figdir, transectName.replace(' ', ''), casename, iMonth, climoyearStart, climoyearEnd)
-            figfile = 'figs/salinity_' + transectName.replace(' ', '') + '_' + shortName[iSim] + '_' + seasonName + '.png'
-            fig = plt.figure(figsize=figsize, dpi=figdpi)
-            ax = fig.add_subplot()
+            #figfile = '{}/Salt_{}_{}_{}_years{:04d}-{:04d}.png'.format(
+            #          figdir, transectName.replace(' ', ''), casename, iMonth, climoyearStart, climoyearEnd)
+            #figfile = 'figs/salinity_' + transectName.replace(' ', '') + '_' + shortName[iSim] + '_' + seasonName + '.png'
+            ax = plt.subplot(2,2,iSim*2+2)
             ax.set_facecolor('darkgrey')
             # new mrp for colormap
             #if iSim<3: #==1:
@@ -350,8 +349,6 @@ for iTransect in range(nTransects):
             ax.annotate('lat={:5.2f}'.format(180.0/np.pi*latEdges[-1]), xy=(1, -0.1), xycoords='axes fraction', ha='center', va='bottom')
             ax.annotate('lon={:5.2f}'.format(180.0/np.pi*lonEdges[-1]), xy=(1, -0.15), xycoords='axes fraction', ha='center', va='bottom')
             ax.invert_yaxis()
-            plt.savefig(figfile, bbox_inches='tight')
-            plt.close()
 
             #  and finally normalVelocity (if vel is not None)
             if vel is not None:
@@ -365,7 +362,7 @@ for iTransect in range(nTransects):
                 figfile = '{}/Vel_{}_{}_{}_years{:04d}-{:04d}.png'.format(
                            figdir, transectName.replace(' ', ''), casename, iMonth, climoyearStart, climoyearEnd)
                 fig = plt.figure(figsize=figsize, dpi=figdpi)
-                ax = fig.add_subplot()
+                ax = fig.subplot()
                 ax.set_facecolor('darkgrey')
                 cf = ax.contourf(x, y, normalVel, cmap=colormapV, norm=cnormV, levels=clevelsV)
                 cax, kw = mpl.colorbar.make_axes(ax, location='right', pad=0.05, shrink=0.9)
@@ -383,5 +380,10 @@ for iTransect in range(nTransects):
                 ax.invert_yaxis()
                 plt.savefig(figfile, bbox_inches='tight')
                 plt.close()
+
+        # end for iSim in range(len(simName)):
+        figfile = figdir + transectName.replace(' ', '') + '_' + shortName[iSim] + '_' + seasonName + '.png'
+        plt.savefig(figfile, bbox_inches='tight')
+        plt.close()
     # end for iMonth in [1]: #months:
 # end for iTransect in range(nTransects):
