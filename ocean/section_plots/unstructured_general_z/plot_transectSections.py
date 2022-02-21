@@ -278,7 +278,7 @@ for iTransect in range(nTransects):
                        transectName, iMonth, casename, climoyearStart, climoyearEnd)
             figfile = '{}/Temp_{}_{}_{}_years{:04d}-{:04d}.png'.format(
                       figdir, transectName.replace(' ', ''), casename, iMonth, climoyearStart, climoyearEnd)
-            figfile = 'temperature_' + transectName.replace(' ', '') + '_' + shortName[iSim] + '_' + seasonName + '.png'
+            figfile = 'figs/temperature_' + transectName.replace(' ', '') + '_' + shortName[iSim] + '_' + seasonName + '.png'
             fig = plt.figure(figsize=figsize, dpi=figdpi)
             ax = fig.add_subplot()
             ax.set_facecolor('darkgrey')
@@ -312,7 +312,7 @@ for iTransect in range(nTransects):
                        transectName, iMonth, casename, climoyearStart, climoyearEnd)
             figfile = '{}/Salt_{}_{}_{}_years{:04d}-{:04d}.png'.format(
                       figdir, transectName.replace(' ', ''), casename, iMonth, climoyearStart, climoyearEnd)
-            figfile = 'salinity_' + transectName.replace(' ', '') + '_' + shortName[iSim] + '_' + seasonName + '.png'
+            figfile = 'figs/salinity_' + transectName.replace(' ', '') + '_' + shortName[iSim] + '_' + seasonName + '.png'
             fig = plt.figure(figsize=figsize, dpi=figdpi)
             ax = fig.add_subplot()
             ax.set_facecolor('darkgrey')
