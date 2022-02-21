@@ -5,24 +5,24 @@ given a certain transect mask
 """
 ############################## transects
 transectNames = ['all']
-transectNames = ['Faroe Bank Channel Along']
+transectNames = ['Faroe Bank Ch']
 #transectNames = ['OSNAP East']
 #transectNames = ['Barents Sea Opening', 'Fram Strait']
 #transectNames = ['Barents Sea Opening', 'Bering Strait', 'Davis Strait',
 #                 'Denmark Strait', 'Fram Strait', 'Iceland-Faroe-Scotland']
 
 ############################## months or seasons
-#seasons = ['JFM', 'JAS', 'ANN']
-seasons = ['ANN']
+seasonList = ['JFM', 'JAS', 'ANN']
+#seasonList = ['ANN']
 
 ############################## model files, run dirs
 rr = '/lcrc/group/e3sm/ac.mpetersen/scratch/anvil/'
 simName = ['20211006g.normal.WCYCL1850.ne30pg2_EC30to60E2r2.sigmaz.anvil/',
   '211006h.sigmaz-hMin1.WCYCL1850.ne30pg2_EC30to60E2r2.anvil/']
-shortName= ['z-level',
-  'sigma-z_14']
+simShortName= ['z-level',
+  'sigma-z']
 meshfile = ['init_zlevel.nc','init_hMin1_14.nc']
-# extra simName = '20211006f.init8.WCYCL1850.ne30pg2_EC30to60E2r2.sigmaz.anvil/'; shortName='sigma-z_8'
+# extra simName = '20211006f.init8.WCYCL1850.ne30pg2_EC30to60E2r2.sigmaz.anvil/'; simShortName='sigma-z_8'
 subdir = 'yrs21-30/clim/mpas/avg/unmasked_EC30to60E2r2/'
 climofile = 'mpaso_JFM_002101_003003_climo.nc'; seasonName = 'JFM'
 climofile = 'mpaso_JAS_002107_003009_climo.nc'; seasonName = 'JAS'
@@ -67,12 +67,10 @@ colorIndices0 = [0, 10, 28, 57, 85, 113, 125, 142, 155, 170, 198, 227, 242, 255]
 #clevelsT = [-2.0, -1.8, -1.5, -1.0, -0.5, 0.0, 0.5, 2.0, 4.0, 6.0, 8.0, 10., 12.]
 #clevelsS = [30.0, 31.0, 32.0, 33.0, 33.5, 34.0, 34.5, 34.8, 34.85, 34.9, 34.95, 35.0, 35.5]
 # Better for OSNAP:
-#clevelsT = [-1.0, -0.5, 0.0, 0.5, 2.0, 2.5, 3.0, 3.5, 4.0, 6.0, 8., 10., 12.]
-clevelsT = np.linspace(2.0, 6.0, 13)
+clevelsT = [-1.0, -0.5, 0.0, 0.5, 2.0, 2.5, 3.0, 3.5, 4.0, 6.0, 8., 10., 12.]
+#clevelsT = np.linspace(2.0, 6.0, 13)
 clevelsS = [31.0, 33.0, 33.5, 33.8, 34.2, 34.6, 34.8, 34.85, 34.9, 34.95, 35.0, 35.2, 35.5]
 #clevelsS = np.linspace(34.7, 35.2, 13)
-#print('colorIndices0',np.shape(colorIndices0))
-#print('clevelsS',clevelsS,np.shape(clevelsS))
 clevelsV = [-0.25, -0.2, -0.15, -0.1, -0.02, 0.0, 0.02, 0.1, 0.2, 0.3, 0.5]
 colormapT = plt.get_cmap('RdBu_r')
 colormapS = cmocean.cm.haline
@@ -174,23 +172,17 @@ for iTransect in range(nTransects):
     [x, y] = np.meshgrid(dist, z)
     x = x.T
     
-    # Check lon,lat of edges to make sure we have the right edges
-    #print(180.0/np.pi*lonEdges)
-    #print(180.0/np.pi*latEdges)
-    # Check lon,lat of cells to make sure we have the right cellsOnEdge
-    #print('lonCell0=', 180/np.pi*mesh.lonCell.sel(nCells=cellsOnEdge1-1).values)
-    #print('latCell0=', 180/np.pi*mesh.latCell.sel(nCells=cellsOnEdge1-1).values)
-    #print('lonCell1=', 180/np.pi*mesh.lonCell.sel(nCells=cellsOnEdge2-1).values)
-    #print('latCell1=', 180/np.pi*mesh.latCell.sel(nCells=cellsOnEdge2-1).values)
     latmean = 180.0/np.pi*np.nanmean(latEdges)
     lonmean = 180.0/np.pi*np.nanmean(lonEdges)
     pressure = gsw.p_from_z(-z, latmean)
 
     # Load in T, S, and normalVelocity for each season, and plot them
-    for iMonth in [1]: #months:
+    for season in seasonList:
         fig = plt.figure(figsize=figsize, dpi=figdpi)
         for iSim in range(len(simName)):
-            modelfile = rr + simName[iSim] + subdir + climofile
+            modeldir = rr + simName[iSim] + subdir
+            modelfile = glob.glob('{}/mpaso_{}_{:04d}??_{:04d}??_climo.nc'.format(
+                        modeldir, season, climoyearStart, climoyearEnd))[0]
             ncid = Dataset(modelfile, 'r')
             print('modelfile',modelfile)
             hOnCell1 = ncid.variables[pre + 'layerThickness'][0, cellsOnEdge1-1, :]
@@ -237,18 +229,13 @@ for iTransect in range(nTransects):
                 # These become False if the second expression is negated (topography cells)
                 edgeMask[iEdge, :] = np.logical_and(edgeMask[iEdge, :],
                                                     range(1, nlevels+1) <= maxLevelEdge[iEdge])
-            #print('   season: ', s)
-            #modelfile = glob.glob('{}/mpaso_{}_{:04d}??_{:04d}??_climo.nc'.format(
-            #            modeldir, iMonth, climoyearStart, climoyearEnd))[0]
-            #modelfile = 'init_hMin1_14.nc'
-            #ncid = Dataset(modelfile, 'r')
             ## Try loading in normalVelocity (on edge centers)
             try:
                 vel = ncid.variables['timeMonthly_avg_normalVelocity'][0, transectEdges-1, :]
                 if 'timeMonthly_avg_normalGMBolusVelocity' in ncid.variables.keys():
                     vel += ncid.variables['timeMonthly_avg_normalGMBolusVelocity'][0, transectEdges-1, :]
             except:
-                print('*** normalVelocity variable not found: skipping it...')
+                #print('*** normalVelocity variable not found: skipping it...')
                 vel = None
             # Load in T and S (on cellsOnEdge centers)
             preT = pre + 'activeTracers_'
@@ -256,7 +243,6 @@ for iTransect in range(nTransects):
             tempOnCell2 = ncid.variables[preT + 'temperature'][0, cellsOnEdge2-1, :]
             saltOnCell1 = ncid.variables[preT + 'salinity'][0, cellsOnEdge1-1, :]
             saltOnCell2 = ncid.variables[preT + 'salinity'][0, cellsOnEdge2-1, :]
-            ncid.close()
 
             # Mask T,S values that fall on land and topography
             tempOnCell1 = np.ma.masked_array(tempOnCell1, ~cellMask1)
@@ -264,11 +250,8 @@ for iTransect in range(nTransects):
             saltOnCell1 = np.ma.masked_array(saltOnCell1, ~cellMask1)
             saltOnCell2 = np.ma.masked_array(saltOnCell2, ~cellMask2)
             # Interpolate T,S values onto edges
-            #temp = np.nanmean(np.ma.array([tempOnCell1, tempOnCell2]), axis=0)
-            #salt = np.nanmean(np.ma.array([saltOnCell1, saltOnCell2]), axis=0)
             temp = np.nanmean(np.ma.array([tempOnCell1, tempOnCell2]), axis=0)
             salt = np.nanmean(np.ma.array([saltOnCell1, saltOnCell2]), axis=0)
-            print('np.ma.min(salt)',np.ma.min(salt))
 
             # Compute sigma's
             SA = gsw.SA_from_SP(salt, pressure[np.newaxis, :], lonmean, latmean)
@@ -281,14 +264,11 @@ for iTransect in range(nTransects):
 
             # Plot sections
             #  T first
-            figtitle = 'Temperature ({}), {} ({}, years={}-{})'.format(
-                       transectName, iMonth, casename, climoyearStart, climoyearEnd)
-            # figfile = '{}/Temp_{}_{}_{}_years{:04d}-{:04d}.png'.format(
-            #           figdir, transectName.replace(' ', ''), casename, iMonth, climoyearStart, climoyearEnd)
-            # figfile = 'figs/temperature_' + transectName.replace(' ', '') + '_' + shortName[iSim] + '_' + seasonName + '.png'
+            figtitle = '{} Temperature, {}, {} years={}-{}'.format(
+                       simShortName[iSim], transectName, season, climoyearStart, climoyearEnd)
             ax = plt.subplot(2,2,iSim*2+1)
             ax.set_facecolor('darkgrey')
-            cf = ax.contourf(x, y, temp, cmap=colormapT, norm=cnormT, levels=clevelsT, extend='max')
+            cf = ax.contourf(x, y, temp, cmap=colormapT, norm=cnormT, levels=clevelsT, extend='both')
             #cf = ax.scatter(x, y, temp, cmap=colormapT, norm=cnormT)
             #cf = ax.pcolormesh(x, y, temp, cmap=colormapT, norm=cnormT)
             cax, kw = mpl.colorbar.make_axes(ax, location='right', pad=0.05, shrink=0.9)
@@ -310,15 +290,10 @@ for iTransect in range(nTransects):
             ax.annotate('lat={:5.2f}'.format(180.0/np.pi*latEdges[-1]), xy=(1, -0.1), xycoords='axes fraction', ha='center', va='bottom')
             ax.annotate('lon={:5.2f}'.format(180.0/np.pi*lonEdges[-1]), xy=(1, -0.15), xycoords='axes fraction', ha='center', va='bottom')
             ax.invert_yaxis()
-            #plt.savefig(figfile, bbox_inches='tight')
-            #plt.close()
 
             #  then S
-            figtitle = 'Salinity ({}), {} ({}, years={}-{})'.format(
-                       transectName, iMonth, casename, climoyearStart, climoyearEnd)
-            #figfile = '{}/Salt_{}_{}_{}_years{:04d}-{:04d}.png'.format(
-            #          figdir, transectName.replace(' ', ''), casename, iMonth, climoyearStart, climoyearEnd)
-            #figfile = 'figs/salinity_' + transectName.replace(' ', '') + '_' + shortName[iSim] + '_' + seasonName + '.png'
+            figtitle = '{} Salinity, {}, {} years={}-{}'.format(
+                       simShortName[iSim], transectName, season, climoyearStart, climoyearEnd)
             ax = plt.subplot(2,2,iSim*2+2)
             ax.set_facecolor('darkgrey')
             # new mrp for colormap
@@ -329,7 +304,7 @@ for iTransect in range(nTransects):
             #    colormapS.set_over(overColor)
             #    cnormS = mpl.colors.BoundaryNorm(clevelsS, colormapS.N)
                 # end new mrp
-            cf = ax.contourf(x, y, salt, cmap=colormapS, norm=cnormS, levels=clevelsS, extend='max')
+            cf = ax.contourf(x, y, salt, cmap=colormapS, norm=cnormS, levels=clevelsS, extend='both')
             cax, kw = mpl.colorbar.make_axes(ax, location='right', pad=0.05, shrink=0.9)
             cbar = plt.colorbar(cf, cax=cax, ticks=clevelsS, **kw)
             cbar.ax.tick_params(labelsize=12, labelcolor='black')
@@ -358,9 +333,9 @@ for iTransect in range(nTransects):
                 normalVel = vel*edgeSigns[:, np.newaxis]
 
                 figtitle = 'Velocity ({}), {} ({}, years={}-{})'.format(
-                           transectName, iMonth, casename, climoyearStart, climoyearEnd)
+                           transectName, season, casename, climoyearStart, climoyearEnd)
                 figfile = '{}/Vel_{}_{}_{}_years{:04d}-{:04d}.png'.format(
-                           figdir, transectName.replace(' ', ''), casename, iMonth, climoyearStart, climoyearEnd)
+                           figdir, transectName.replace(' ', ''), casename, season, climoyearStart, climoyearEnd)
                 fig = plt.figure(figsize=figsize, dpi=figdpi)
                 ax = fig.subplot()
                 ax.set_facecolor('darkgrey')
@@ -378,12 +353,13 @@ for iTransect in range(nTransects):
                 ax.annotate('lat={:5.2f}'.format(180.0/np.pi*latEdges[-1]), xy=(1, -0.1), xycoords='axes fraction', ha='center', va='bottom')
                 ax.annotate('lon={:5.2f}'.format(180.0/np.pi*lonEdges[-1]), xy=(1, -0.15), xycoords='axes fraction', ha='center', va='bottom')
                 ax.invert_yaxis()
-                plt.savefig(figfile, bbox_inches='tight')
+                plt.savefig(figfile) #, bbox_inches='tight')
                 plt.close()
 
         # end for iSim in range(len(simName)):
-        figfile = figdir + transectName.replace(' ', '') + '_' + shortName[iSim] + '_' + seasonName + '.png'
+        ncid.close()
+        figfile = figdir + transectName.replace(' ', '') + '_' + simShortName[0] + '_' + simShortName[1] + '_' + season + '.png'
         plt.savefig(figfile, bbox_inches='tight')
         plt.close()
-    # end for iMonth in [1]: #months:
+    # end for season in [1]: #months:
 # end for iTransect in range(nTransects):
