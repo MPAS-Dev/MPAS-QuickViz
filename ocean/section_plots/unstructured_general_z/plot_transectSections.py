@@ -269,7 +269,6 @@ for iTransect in range(nTransects):
             ax = plt.subplot(2,2,iSim*2+1)
             ax.set_facecolor('darkgrey')
             cf = ax.contourf(x, y, temp, cmap=colormapT, norm=cnormT, levels=clevelsT, extend='both')
-            #cf = ax.scatter(x, y, temp, cmap=colormapT, norm=cnormT)
             #cf = ax.pcolormesh(x, y, temp, cmap=colormapT, norm=cnormT)
             cax, kw = mpl.colorbar.make_axes(ax, location='right', pad=0.05, shrink=0.9)
             cbar = plt.colorbar(cf, cax=cax, ticks=clevelsT, **kw)
@@ -309,12 +308,13 @@ for iTransect in range(nTransects):
             cbar = plt.colorbar(cf, cax=cax, ticks=clevelsS, **kw)
             cbar.ax.tick_params(labelsize=12, labelcolor='black')
             cbar.set_label('psu', fontsize=12, fontweight='bold')
-            if sigma2contours is not None:
-                cs = ax.contour(x, y, sigma2, sigma2contours, colors='k', linewidths=1.5)
-                cb = plt.clabel(cs, levels=sigma2contours, inline=True, inline_spacing=2, fmt='%2.1f', fontsize=9)
-            if sigma0contours is not None:
-                cs = ax.contour(x, y, sigma0, sigma0contours, colors='k', linewidths=1.5)
-                cb = plt.clabel(cs, levels=sigma0contours, inline=True, inline_spacing=2, fmt='%5.2f', fontsize=8)
+            cf = ax.plot(x, y)
+            #if sigma2contours is not None:
+            #    cs = ax.contour(x, y, sigma2, sigma2contours, colors='k', linewidths=1.5)
+            #    cb = plt.clabel(cs, levels=sigma2contours, inline=True, inline_spacing=2, fmt='%2.1f', fontsize=9)
+            #if sigma0contours is not None:
+            #    cs = ax.contour(x, y, sigma0, sigma0contours, colors='k', linewidths=1.5)
+            #    cb = plt.clabel(cs, levels=sigma0contours, inline=True, inline_spacing=2, fmt='%5.2f', fontsize=8)
             ax.set_ylim(0, zmax)
             ax.set_xlabel('Distance (km)', fontsize=12, fontweight='bold')
             ax.set_ylabel('Depth (m)', fontsize=12, fontweight='bold')
