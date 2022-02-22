@@ -5,11 +5,11 @@ given a certain transect mask
 """
 ############################## transects
 transectNames = ['all']
-transectNames = ['Faroe Bank Ch N','Faroe Bank Ch','Faroe Shetland Ch']
+#transectNames = ['Faroe Bank Ch N','Faroe Bank Ch','Faroe Shetland Ch']
 
 ############################## months or seasons
-#seasonList = ['JFM', 'JAS', 'ANN']
-seasonList = ['ANN']
+seasonList = ['JFM', 'JAS', 'ANN']
+#seasonList = ['ANN']
 
 ############################## model files, run dirs
 rr = '/lcrc/group/e3sm/ac.mpetersen/scratch/anvil/'
@@ -122,7 +122,12 @@ if transectNames[0]=='all' or transectNames[0]=='StandardTransportSectionsRegion
 
 # Get depth
 z = mesh.refBottomDepth.values
-nlevels = len(z)
+nVertLevels = len(z)
+
+refZMid = np.zeros(nVertLevels)
+refZMid[0] =  0.5*z[0]
+for k in range(1,nVertLevels):
+    refZMid[k] =  0.5*(z[k-1] + z[k])
 
 nTransects = len(transectNames)
 maxCells = mask.dims['maxCellsInTransect']
@@ -139,25 +144,12 @@ for iTransect in range(nTransects):
     transectCells = transectCells[np.where(transectCells > 0)[0]]
     ntransectCells = len(transectCells)
 
-    # Get a list of cellsOnCell pairs for each transect cell
-    cellsOnCell = mesh.cellsOnCell.sel(nCells=transectCells-1).values
-
-    # Create a land/topo mask for cellsOnCell
-    cellsOnCell1 = cellsOnCell[:, 0]
-    cellsOnCell2 = cellsOnCell[:, 1]
-
-    # Get cell signs for across-cell velocity direction
-    cellSigns = mask.transectCellMaskSigns.sel(nCells=transectCells-1, nTransects=transectIndex).values
     # Get coordinates of each cell center and compute approximate spherical distance
     lonCells = mesh.lonCell.sel(nCells=transectCells-1).values
     latCells = mesh.latCell.sel(nCells=transectCells-1).values
     lonCells[lonCells>np.pi] = lonCells[lonCells>np.pi] - 2*np.pi
 
-    # load layer thickness
-
-    BDOnCell1 = mesh.variables['bottomDepth'][cellsOnCell1-1]
-    BDOnCell2 = mesh.variables['bottomDepth'][cellsOnCell2-1]
-    bD = np.nanmean(np.array([BDOnCell1, BDOnCell2]), axis=0)
+    bottomDepth = mesh.variables['bottomDepth'][transectCells-1]
 
     dist = [0]
     for iCell in range(1, ntransectCells):
@@ -181,75 +173,37 @@ for iTransect in range(nTransects):
             modeldir = rr + simName[iSim] + subdir
             modelfile = glob.glob('{}/mpaso_{}_{:04d}??_{:04d}??_climo.nc'.format(
                         modeldir, season, climoyearStart, climoyearEnd))[0]
-            ncid = Dataset(modelfile, 'r')
-            #print('modelfile',modelfile)
-            hOnCell1 = ncid.variables[pre + 'layerThickness'][0, cellsOnCell1-1, :]
-            hOnCell2 = ncid.variables[pre + 'layerThickness'][0, cellsOnCell2-1, :]
-            LTh = np.nanmean(np.array([hOnCell1, hOnCell2]), axis=0)
-            zMid = np.zeros([ntransectCells,nlevels])
-            for iCell in range(ntransectCells):
-                zMid[iCell,0] =  0.5*LTh[iCell,0]
-                for k in range(1,nlevels):
-                   zMid[iCell,k] =  zMid[iCell,k-1] + 0.5*(LTh[iCell,k-1] + LTh[iCell,k])
-            y = zMid
-
             meshSim = xr.open_dataset(meshfile[iSim])
-            maxLevelCell1 = meshSim.maxLevelCell.sel(nCells=cellsOnCell1-1).values
-            maxLevelCell2 = meshSim.maxLevelCell.sel(nCells=cellsOnCell2-1).values
+            maxLevelCell = meshSim.maxLevelCell.sel(nCells=transectCells-1).values
             xr.Dataset.close(meshSim)
             # Initialize mask to True everywhere
-            cellMask1 = np.ones((ntransectCells, nlevels), bool)
-            cellMask2 = np.ones((ntransectCells, nlevels), bool)
-            for iCell in range(ntransectCells):
-                # These become False if the second expression is negated (land cells)
-                cellMask1[iCell, :] = np.logical_and(cellMask1[iCell, :],
-                                                     cellsOnCell1[iCell, np.newaxis] > 0)
-                cellMask2[iCell, :] = np.logical_and(cellMask2[iCell, :],
-                                                     cellsOnCell2[iCell, np.newaxis] > 0)
-                # These become False if the second expression is negated (topography cells)
-                cellMask1[iCell, :] = np.logical_and(cellMask1[iCell, :],
-                                                     range(1, nlevels+1) <= maxLevelCell1[iCell])
-                cellMask2[iCell, :] = np.logical_and(cellMask2[iCell, :],
-                                                     range(1, nlevels+1) <= maxLevelCell2[iCell])
-
-            # Create a land/topo mask for transectCells
-            maxLevelCell = []
-            for iCell in range(ntransectCells):
-                if cellsOnCell1[iCell]==0:
-                    maxLevelCell.append(maxLevelCell2[iCell])
-                elif cellsOnCell2[iCell]==0:
-                    maxLevelCell.append(maxLevelCell1[iCell])
-                else:
-                    maxLevelCell.append(np.min([maxLevelCell1[iCell], maxLevelCell2[iCell]]))
-            # Initialize mask to True everywhere
-            cellMask = np.ones((ntransectCells, nlevels), bool)
+            cellMask = np.ones((ntransectCells, nVertLevels), bool)
             for iCell in range(ntransectCells):
                 # These become False if the second expression is negated (topography cells)
                 cellMask[iCell, :] = np.logical_and(cellMask[iCell, :],
-                                                    range(1, nlevels+1) <= maxLevelCell[iCell])
-            ## Try loading in normalVelocity (on cell centers)
-            #try:
-            #    vel = ncid.variables['timeMonthly_avg_normalVelocity'][0, transectCells-1, :]
-            #    if 'timeMonthly_avg_normalGMBolusVelocity' in ncid.variables.keys():
-            #        vel += ncid.variables['timeMonthly_avg_normalGMBolusVelocity'][0, transectCells-1, :]
-            #except:
-            #    #print('*** normalVelocity variable not found: skipping it...')
-            #    vel = None
-            # Load in T and S (on cellsOnCell centers)
+                                                     range(1, nVertLevels+1) <= maxLevelCell[iCell])
+            print('modelfile',modelfile)
+            ncid = Dataset(modelfile, 'r')
+
+            #print('modelfile',modelfile)
+            layerThickness = ncid.variables[pre+'layerThickness'][0, transectCells-1, :]
+            zMid = np.zeros([ntransectCells,nVertLevels])
+            for iCell in range(ntransectCells):
+                zMid[iCell,:] = bottomDepth[iCell]
+                zMid[iCell,0] =  0.5*layerThickness[iCell,0]
+                for k in range(1,maxLevelCell[iCell]):
+                   zMid[iCell,k] =  zMid[iCell,k-1] + 0.5*(layerThickness[iCell,k-1] + layerThickness[iCell,k])
+            y = zMid
+
+
+            # Load in T and S
             preT = pre + 'activeTracers_'
-            tempOnCell1 = ncid.variables[preT + 'temperature'][0, cellsOnCell1-1, :]
-            tempOnCell2 = ncid.variables[preT + 'temperature'][0, cellsOnCell2-1, :]
-            saltOnCell1 = ncid.variables[preT + 'salinity'][0, cellsOnCell1-1, :]
-            saltOnCell2 = ncid.variables[preT + 'salinity'][0, cellsOnCell2-1, :]
+            temp = ncid.variables[preT + 'temperature'][0, transectCells-1, :]
+            salt = ncid.variables[preT + 'salinity'][0, transectCells-1, :]
 
             # Mask T,S values that fall on land and topography
-            tempOnCell1 = np.ma.masked_array(tempOnCell1, ~cellMask1)
-            tempOnCell2 = np.ma.masked_array(tempOnCell2, ~cellMask2)
-            saltOnCell1 = np.ma.masked_array(saltOnCell1, ~cellMask1)
-            saltOnCell2 = np.ma.masked_array(saltOnCell2, ~cellMask2)
-            # Interpolate T,S values onto cells
-            temp = np.nanmean(np.ma.array([tempOnCell1, tempOnCell2]), axis=0)
-            salt = np.nanmean(np.ma.array([saltOnCell1, saltOnCell2]), axis=0)
+            temp = np.ma.masked_array(temp, ~cellMask)
+            salt = np.ma.masked_array(salt, ~cellMask)
 
             # Compute sigma's
             SA = gsw.SA_from_SP(salt, pressure[np.newaxis, :], lonmean, latmean)
@@ -258,7 +212,7 @@ for iTransect in range(nTransects):
             sigma0 = gsw.density.sigma0(SA, CT)
 
             #zmax = z[np.max(maxLevelCell)]
-            zmax = np.max(bD)
+            zmax = np.max(bottomDepth)
 
             # Plot sections
             #  T first
@@ -322,37 +276,6 @@ for iTransect in range(nTransects):
             ax.annotate('lat={:5.2f}'.format(180.0/np.pi*latCells[-1]), xy=(1, -0.1), xycoords='axes fraction', ha='center', va='bottom')
             ax.annotate('lon={:5.2f}'.format(180.0/np.pi*lonCells[-1]), xy=(1, -0.15), xycoords='axes fraction', ha='center', va='bottom')
             ax.invert_yaxis()
-
-            #  and finally normalVelocity (if vel is not None)
-            #if vel is not None:
-            #    # Mask velocity values that fall on land and topography
-            #    vel = np.ma.masked_array(vel, ~cellMask)
-            #    # Get normalVelocity direction
-            #    normalVel = vel*cellSigns[:, np.newaxis]
-
-            #    figtitle = 'Velocity ({}), {} ({}, years={}-{})'.format(
-            #               transectName, season, casename, climoyearStart, climoyearEnd)
-            #    figfile = '{}/Vel_{}_{}_{}_years{:04d}-{:04d}.png'.format(
-            #               figdir, transectName.replace(' ', ''), casename, season, climoyearStart, climoyearEnd)
-            #    fig = plt.figure(figsize=figsize, dpi=figdpi)
-            #    ax = fig.subplot()
-            #    ax.set_facecolor('darkgrey')
-            #    cf = ax.contourf(x, y, normalVel, cmap=colormapV, norm=cnormV, levels=clevelsV)
-            #    cax, kw = mpl.colorbar.make_axes(ax, location='right', pad=0.05, shrink=0.9)
-            #    cbar = plt.colorbar(cf, cax=cax, ticks=clevelsV, **kw)
-            #    cbar.ax.tick_params(labelsize=12, labelcolor='black')
-            #    cbar.set_label('m/s', fontsize=12, fontweight='bold')
-            #    ax.set_ylim(0, zmax)
-            #    ax.set_xlabel('Distance (km)', fontsize=12, fontweight='bold')
-            #    ax.set_ylabel('Depth (m)', fontsize=12, fontweight='bold')
-            #    ax.set_title(figtitle, fontsize=12, fontweight='bold')
-            #    ax.annotate('lat={:5.2f}'.format(180.0/np.pi*latCells[0]), xy=(0, -0.1), xycoords='axes fraction', ha='center', va='bottom')
-            #    ax.annotate('lon={:5.2f}'.format(180.0/np.pi*lonCells[0]), xy=(0, -0.15), xycoords='axes fraction', ha='center', va='bottom')
-            #    ax.annotate('lat={:5.2f}'.format(180.0/np.pi*latCells[-1]), xy=(1, -0.1), xycoords='axes fraction', ha='center', va='bottom')
-            #    ax.annotate('lon={:5.2f}'.format(180.0/np.pi*lonCells[-1]), xy=(1, -0.15), xycoords='axes fraction', ha='center', va='bottom')
-            #    ax.invert_yaxis()
-            #    plt.savefig(figfile) #, bbox_inches='tight')
-            #    plt.close()
 
             ncid.close()
         # end for iSim in range(len(simName)):
