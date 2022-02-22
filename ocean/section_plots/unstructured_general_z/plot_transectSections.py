@@ -5,15 +5,11 @@ given a certain transect mask
 """
 ############################## transects
 transectNames = ['all']
-transectNames = ['Faroe Bank Ch']
-#transectNames = ['OSNAP East']
-#transectNames = ['Barents Sea Opening', 'Fram Strait']
-#transectNames = ['Barents Sea Opening', 'Bering Strait', 'Davis Strait',
-#                 'Denmark Strait', 'Fram Strait', 'Iceland-Faroe-Scotland']
+transectNames = ['Faroe Bank Ch N','Faroe Bank Ch','Faroe Shetland Ch']
 
 ############################## months or seasons
-seasonList = ['JFM', 'JAS', 'ANN']
-#seasonList = ['ANN']
+#seasonList = ['JFM', 'JAS', 'ANN']
+seasonList = ['ANN']
 
 ############################## model files, run dirs
 rr = '/lcrc/group/e3sm/ac.mpetersen/scratch/anvil/'
@@ -24,8 +20,8 @@ simShortName= ['z-level',
 meshfile = ['init_zlevel.nc','init_hMin1_14.nc']
 # extra simName = '20211006f.init8.WCYCL1850.ne30pg2_EC30to60E2r2.sigmaz.anvil/'; simShortName='sigma-z_8'
 subdir = 'yrs21-30/clim/mpas/avg/unmasked_EC30to60E2r2/'
-climofile = 'mpaso_JFM_002101_003003_climo.nc'; seasonName = 'JFM'
-climofile = 'mpaso_JAS_002107_003009_climo.nc'; seasonName = 'JAS'
+#climofile = 'mpaso_JFM_002101_003003_climo.nc'; seasonName = 'JFM'
+#climofile = 'mpaso_JAS_002107_003009_climo.nc'; seasonName = 'JAS'
 pre = 'timeMonthly_avg_'
 maskfile = 'mask.nc'
 casename = ''; 'E3SM60to30' # no spaces
@@ -134,7 +130,7 @@ for iTransect in range(nTransects):
     # Identify transect
     transectName = transectNames[iTransect]
     transectIndex = allTransects.index(transectName)
-    print('Plotting sections for transect: ', transectName)
+    print('transect: ', transectName)
 
     # Choose mask for this particular transect
     transectmask = mask.isel(nTransects=transectIndex).squeeze()
@@ -178,13 +174,15 @@ for iTransect in range(nTransects):
 
     # Load in T, S, and normalVelocity for each season, and plot them
     for season in seasonList:
+        print('  season: ', season)
         fig = plt.figure(figsize=figsize, dpi=figdpi)
         for iSim in range(len(simName)):
+            print('    sim: ', simShortName[iSim])
             modeldir = rr + simName[iSim] + subdir
             modelfile = glob.glob('{}/mpaso_{}_{:04d}??_{:04d}??_climo.nc'.format(
                         modeldir, season, climoyearStart, climoyearEnd))[0]
             ncid = Dataset(modelfile, 'r')
-            print('modelfile',modelfile)
+            #print('modelfile',modelfile)
             hOnCell1 = ncid.variables[pre + 'layerThickness'][0, cellsOnEdge1-1, :]
             hOnCell2 = ncid.variables[pre + 'layerThickness'][0, cellsOnEdge2-1, :]
             LTh = np.nanmean(np.array([hOnCell1, hOnCell2]), axis=0)
@@ -225,8 +223,6 @@ for iTransect in range(nTransects):
                     maxLevelEdge.append(np.min([maxLevelCell1[iEdge], maxLevelCell2[iEdge]]))
             # Initialize mask to True everywhere
             edgeMask = np.ones((ntransectEdges, nlevels), bool)
-            #print('edgeMask',edgeMask)
-            #print('maxLevelEdge',maxLevelEdge)
             for iEdge in range(ntransectEdges):
                 # These become False if the second expression is negated (topography cells)
                 edgeMask[iEdge, :] = np.logical_and(edgeMask[iEdge, :],
@@ -270,9 +266,6 @@ for iTransect in range(nTransects):
                        simShortName[iSim], transectName, season, climoyearStart, climoyearEnd)
             ax = plt.subplot(2,2,iSim*2+1)
             ax.set_facecolor('darkgrey')
-            print('x',x)
-            print('y',y)
-            print('temp',temp)
             cf = ax.contourf(x, y, temp, cmap=colormapT, norm=cnormT, levels=clevelsT, extend='both')
             #cf = ax.pcolormesh(x, y, temp, cmap=colormapT, norm=cnormT)
             cax, kw = mpl.colorbar.make_axes(ax, location='right', pad=0.05, shrink=0.9)
@@ -361,8 +354,8 @@ for iTransect in range(nTransects):
             #    plt.savefig(figfile) #, bbox_inches='tight')
             #    plt.close()
 
+            ncid.close()
         # end for iSim in range(len(simName)):
-        ncid.close()
         figfile = figdir + transectName.replace(' ', '') + '_' + simShortName[0] + '_' + simShortName[1] + '_' + season + '.png'
         plt.savefig(figfile, bbox_inches='tight')
         plt.close()
