@@ -8,8 +8,8 @@ transectNames = ['all']
 #transectNames = ['Faroe Bank Ch N','Faroe Bank Ch','Faroe Shetland Ch']
 
 ############################## months or seasons
-seasonList = ['JFM', 'JAS', 'ANN']
-#seasonList = ['ANN']
+#seasonList = ['JFM', 'JAS', 'ANN']
+seasonList = ['ANN']
 
 ############################## model files, run dirs
 rr = '/lcrc/group/e3sm/ac.mpetersen/scratch/anvil/'

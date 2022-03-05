@@ -63,12 +63,12 @@
                 "type": "LineString",
                 "coordinates": [
                     [
-                        -35.0,
-                        65.5
+                        -34.0,
+                        66.0
                     ],
                     [
-                        -27.0,
-                        63.0
+                        -26.0,
+                        63.5
                     ]
                 ]
             }
@@ -87,12 +87,108 @@
                 "type": "LineString",
                 "coordinates": [
                     [
+                        -35.0,
+                        65.5
+                    ],
+                    [
+                        -27.0,
+                        63.0
+                    ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Denmark Strait cs6",
+                "tags": "standard_transport_sections;arctic_sections",
+                "object": "transect",
+                "component": "ocean",
+                "author": "Mark Petersen",
+                "history": "03/04/22:  created by hand"
+            },
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                    [
+                        -36.0,
+                        65.0
+                    ],
+                    [
+                        -28.0,
+                        62.5
+                    ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Denmark Strait cs7",
+                "tags": "standard_transport_sections;arctic_sections",
+                "object": "transect",
+                "component": "ocean",
+                "author": "Mark Petersen",
+                "history": "03/04/22:  created by hand"
+            },
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                    [
                         -37.0,
                         64.5
                     ],
                     [
                         -29.0,
                         62.0
+                    ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Denmark Strait cs8",
+                "tags": "standard_transport_sections;arctic_sections",
+                "object": "transect",
+                "component": "ocean",
+                "author": "Mark Petersen",
+                "history": "03/04/22:  created by hand"
+            },
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                    [
+                        -38.0,
+                        64.0
+                    ],
+                    [
+                        -30.0,
+                        61.5
+                    ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Denmark Strait cs9",
+                "tags": "standard_transport_sections;arctic_sections",
+                "object": "transect",
+                "component": "ocean",
+                "author": "Mark Petersen",
+                "history": "03/04/22:  created by hand"
+            },
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                    [
+                        -39.0,
+                        63.5
+                    ],
+                    [
+                        -31.0,
+                        61.0
                     ]
                 ]
             }
@@ -1446,7 +1542,30 @@
     {
       "type": "Feature",
       "properties": {
-        "name": "Denmark Strait N-S",
+        "name": "Denmark Strait as1",
+        "component": "ocean",
+        "tags": "",
+        "author": "Mark Petersen",
+        "object": "transect"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates":
+        [
+            [ -39.5 , 56.0 ],
+            [ -37.5 , 59.0 ],
+            [ -35.5 , 62.0 ],
+            [ -32.5 , 64.0 ],
+            [ -30.5 , 65.0 ],
+            [ -28.0 , 66.0 ],
+            [ -24.5 , 68.0 ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Denmark Strait as2",
         "component": "ocean",
         "tags": "",
         "author": "Mark Petersen",
@@ -1463,6 +1582,29 @@
             [ -30.0 , 65.0 ],
             [ -27.5 , 66.0 ],
             [ -24.0 , 68.0 ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Denmark Strait as3",
+        "component": "ocean",
+        "tags": "",
+        "author": "Mark Petersen",
+        "object": "transect"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates":
+        [
+            [ -38.5 , 56.0 ],
+            [ -36.5 , 59.0 ],
+            [ -34.5 , 62.0 ],
+            [ -31.5 , 64.0 ],
+            [ -29.5 , 65.0 ],
+            [ -27.0 , 66.0 ],
+            [ -23.5 , 68.0 ]
         ]
       }
     }
