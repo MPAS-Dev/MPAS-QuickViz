@@ -26,7 +26,7 @@ def write_coordinate_file(grid_file):
 ########################################################################
 ########################################################################
 
-def setup_otps2(constituents,tpxo8_data_path):
+def setup_otps2(constituents,tpxo_data_path,tpxo_version):
 
   for con in constituents:
     print('setup '+con)
@@ -54,13 +54,22 @@ def setup_otps2(constituents,tpxo8_data_path):
 
     # Write the Model_atlas_con file
     f = open('inputs/Model_atlas_'+con,'w')
-    f.write('TPXO8/hf.'+con+'_tpxo8_atlas_30c_v1.out\n')
-    f.write('TPXO8/uv.'+con+'_tpxo8_atlas_30c_v1.out\n')
-    f.write('TPXO8/grid_tpxo8_atlas_30_v1')
+    if tpxo_version == 'TPXO8':
+      f.write('TPXO8/hf.'\
+          +con+'_tpxo8_atlas_30c_v1.out\n')
+      f.write('TPXO8/uv.'\
+          +con+'_tpxo8_atlas_30c_v1.out\n')
+      f.write('TPXO8/grid_tpxo8_atlas_30_v1')
+    elif tpxo_version == 'TPXO9':
+      f.write('TPXO9/h_'\
+          +con+'_tpxo9_atlas_30_v5\n')
+      f.write('TPXO9/u_'\
+          +con+'_tpxo9_atlas_30_v5\n')
+      f.write('TPXO9/grid_tpxo9_atlas_30_v5')
     f.close()
 
-    # Link the TPXO8 data directory
-    subprocess.call('ln -sf ' + tpxo8_data_path + ' TPXO8', shell=True)
+    # Link the TPXO data directory
+    subprocess.call('ln -sf ' + tpxo_data_path, shell=True)
 
     # Create directory for the con.out files
     if not os.path.exists('outputs'):
@@ -72,11 +81,10 @@ def setup_otps2(constituents,tpxo8_data_path):
 def run_otps2(exe_path,constituents):
 
   # Make the executable if necessary 
-  if not os.path.isfile(exe_path+'/extract_HC'):
-    pwd = os.getcwd()
-    os.chdir(exe_path)
-    subprocess.call('make extract_HC',shell=True)
-    os.chdir(pwd)
+  pwd = os.getcwd()
+  os.chdir(exe_path)
+  subprocess.call('make extract_HC',shell=True)
+  os.chdir(pwd)
 
   # Run the executable 
   for con in constituents:
@@ -118,18 +126,18 @@ def read_otps2_output(constituents):
 ########################################################################
 ########################################################################
 
-def append_tpxo8_data(output_file,constituents,mesh_AP):
+def append_tpxo_data(output_file,constituents,mesh_AP,tpxo_version):
 
   data_nc = netCDF4.Dataset(output_file,'a', format='NETCDF3_64BIT_OFFSET')
   for con in constituents:
-    amp_var = data_nc.createVariable(con.upper()+'AmplitudeTPXO8',np.float64,('nCells'))
+    amp_var = data_nc.createVariable(con.upper()+'Amplitude'+tpxo_version,np.float64,('nCells'))
     amp_var[:] = mesh_AP[con]['amp'][:]
     amp_var.units = 'm'
-    amp_var.long_name = 'Amplitude of '+con.upper()+ ' tidal consitiuent at each cell center from TPXO8 model'
-    phase_var = data_nc.createVariable(con.upper()+'PhaseTPXO8',np.float64,('nCells'))
+    amp_var.long_name = 'Amplitude of '+con.upper()+ ' tidal consitiuent at each cell center from '+tpxo_version+' model'
+    phase_var = data_nc.createVariable(con.upper()+'Phase'+tpxo_version,np.float64,('nCells'))
     phase_var[:] = mesh_AP[con]['phase'][:]
     phase_var.units = 'deg'
-    phase_var.long_name = 'Phase of '+con.upper()+ ' tidal consitiuent at each cell center from TPXO8 model'
+    phase_var.long_name = 'Phase of '+con.upper()+ ' tidal consitiuent at each cell center from '+tpxo_version+' model'
 
 
 ########################################################################
@@ -141,10 +149,14 @@ if __name__ == '__main__':
   inputfile = pwd+'/inject_TPXO8.config'
   f = open(inputfile)
   cfg = yaml.load(f,yaml.Loader)
+  if cfg['tpxo_data_path'].find('TPXO8') > 0:
+    tpxo_version = 'TPXO8'
+  elif cfg['tpxo_data_path'].find('TPXO9') > 0:
+    tpxo_version = 'TPXO9'
 
   write_coordinate_file(cfg['grid_file'])  
-  setup_otps2(cfg['constituents'],cfg['tpxo8_data_path'])
+  setup_otps2(cfg['constituents'],cfg['tpxo_data_path'],tpxo_version)
   run_otps2(cfg['otps2_exe_path'],cfg['constituents'])
   mesh_AP = read_otps2_output(cfg['constituents'])
-  append_tpxo8_data(cfg['output_file'],cfg['constituents'],mesh_AP)
+  append_tpxo_data(cfg['output_file'],cfg['constituents'],mesh_AP,tpxo_version)
 
