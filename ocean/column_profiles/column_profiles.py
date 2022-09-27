@@ -9,9 +9,10 @@ September 2022
 ############################## model files, run dirs
 runDir = '/lustre/scratch5/turquoise/mpeterse/runs/s/'
 #runDir = '/lustre/scratch5/turquoise/mpeterse/runs/220922_soma_find_noise/ocean/soma/32km/long/'
-simName = 's02n'
-iTime = 3
+simName = 's05a'
+iTime = 0
 fileName = '/output.nc'
+#fileName = '/init.nc'
 meshName = '/init.nc'
 #domainName = 'soma'
 domainName = 'EC60to30'
@@ -21,13 +22,20 @@ rad2deg = 180.0/3.14159
 if domainName == 'EC60to30':
 # global locations
 # Atlantic
-    lonMin = 360 -63
-    lonMax = 360 -60
+    lonMid = 360 -12
+    latMid =  62
+    lonWid = 1.4
+    lonWid = 5
 # Pacific
-    #lonMin = 175
-    #lonMax = 177
-    latMin =  30
-    latMax =  33
+    #lonMid = 175
+    #latMid =  30
+    #lonWid =   2.0
+
+    latWid = lonWid
+    lonMin = lonMid-lonWid/2
+    lonMax = lonMid+lonWid/2
+    latMin = latMid-latWid/2
+    latMax = latMid+latWid/2
 # Soma locations
 elif domainName == 'soma':
     lonMin = 0.193*rad2deg
@@ -70,17 +78,21 @@ cellList = np.where(np.logical_and(np.logical_and(np.logical_and(
 
 fig = plt.figure(figsize=(20,12))
 varNames = ['divergence','vertVelocityTop','vertTransportVelocityTop','temperature', 'salinity','density','pressure','zMid']
-varNames = ['temperature', 'salinity']
 varNames = ['divergence','vertVelocityTop','temperature', 'salinity']
+varNames = ['temperature', 'salinity']
+varNames = ['temperature', 'salinity','density','potentialDensity']
 for j in range(len(varNames)):
     plt.subplot(2,2,j+1)
     var = data.variables[varNames[j]]
+    print('variable:',varNames[j])
     for i in range(len(cellList)):
         iCell = int(cellList[i])
         k = int(maxLevelCell[iCell])
         varData = var[iTime,iCell,0:k]
         #varData = np.where(varData>-1e20,varData,np.NAN)
         plt.plot(varData,np.arange(1,k+1),label='cell '+str(iCell))
+        print('iCell',iCell,'kMax',k)
+        print('varData',varData)
     plt.gca().invert_yaxis()
     plt.title(varNames[j])
     plt.grid()
@@ -89,12 +101,15 @@ for j in range(len(varNames)):
 
 # add information to bottom of figure
 today = date.today()
-xtime = data.variables['xtime']
-import codecs
-strXTime = str(codecs.decode(xtime[iTime].values))[2:19]
-lonMin = (lonMin+180.0)%360.0 - 180.0
-plt.figtext(0.1,0.05,domainName+' '+simName+' '+strXTime+ 
-    '  lon,lat: '+str(lonMin)+', '+str(latMin)+'       date: '+today.strftime("%d/%m/%Y"))
+try:
+    xtime = data.variables['xtime']
+    import codecs
+    strXTime = str(codecs.decode(xtime[iTime].values))[2:19]
+except:
+    strXTime = 'init'
+lonMid = (lonMid+180.0)%360.0 - 180.0
+plt.figtext(0.1,0.92,domainName+' '+simName+' '+strXTime+ 
+    '  lon,lat: '+str(lonMid)+', '+str(latMid)+'       date: '+today.strftime("%d/%m/%Y"))
 
 figfile = 'vert_profiles_' +simName+'_t'+str(iTime)+ '.png'
 print(figfile)
