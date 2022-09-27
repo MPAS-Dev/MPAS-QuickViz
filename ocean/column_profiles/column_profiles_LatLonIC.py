@@ -7,14 +7,11 @@ September 2022
 """
 
 ############################## model files, run dirs
-runDir = '/lustre/scratch5/turquoise/mpeterse/runs/s/'
-#runDir = '/lustre/scratch5/turquoise/mpeterse/runs/220922_soma_find_noise/ocean/soma/32km/long/'
+runDir = '/lustre/scratch5/turquoise/mpeterse/runs/220927_EC30to60_zlevel_noPBC_noSmooth/ocean/global_ocean/EC30to60/PHC/init/initial_state/'
 simName = 's05a'
 iTime = 0
-fileName = '/output.nc'
-#fileName = '/init.nc'
-meshName = '/init.nc'
-#domainName = 'soma'
+fileName = 'temperature.nc'
+fileName = 'salinity.nc'
 domainName = 'EC60to30'
 
 deg2rad = 3.14159/180.0
@@ -36,65 +33,56 @@ if domainName == 'EC60to30':
     lonMax = lonMid+lonWid/2
     latMin = latMid-latWid/2
     latMax = latMid+latWid/2
-# Soma locations
-elif domainName == 'soma':
-    lonMin = 0.193*rad2deg
-    lonMax = 0.210*rad2deg
-    latMin = 0.477*rad2deg
-    latMax = 0.490*rad2deg
 else:
     print('incorrect domain')
 
-#import os
-#import glob
 import matplotlib as mpl
 from datetime import date
-#mpl.use('Agg')
 import numpy as np
 import matplotlib.pyplot as plt
-#import matplotlib.colors as cols
-#from matplotlib.pyplot import cm
-#from matplotlib.colors import BoundaryNorm
-#import cmocean
 import xarray as xr
 from netCDF4 import Dataset
-#from mpas_analysis.shared.io.utility import decode_strings
-#import gsw
 
-mesh = xr.open_dataset(runDir+simName+meshName)
-data = xr.open_dataset(runDir+simName+fileName)
+data = xr.open_dataset(runDir+fileName)
 
-z = mesh.refBottomDepth.values
-nVertLevels = len(z)
-nCells = data.dims['nCells']
+t_lon = data.variables['t_lon']
+t_lat = data.variables['t_lat']
+depth_t = data.variables['depth_t']
+print(t_lon)
+print(t_lat)
+print(depth_t)
 
-latCell = mesh.variables['latCell']
-lonCell = mesh.variables['lonCell']
-maxLevelCell = mesh.variables['maxLevelCell']
+lonList = np.where(np.logical_and(t_lon>lonMin, t_lon<lonMax))[0]
+latList = np.where(np.logical_and(t_lat>latMin, t_lat<latMax))[0]
 
-cellList = np.where(np.logical_and(np.logical_and(np.logical_and(
-    latCell>latMin*deg2rad, latCell<latMax*deg2rad), 
-    lonCell>lonMin*deg2rad), lonCell<lonMax*deg2rad))[0]
-
+print('lonList',lonList)
+print('latList',latList)
 fig = plt.figure(figsize=(20,12))
-varNames = ['divergence','vertVelocityTop','vertTransportVelocityTop','temperature', 'salinity','density','pressure','zMid']
-varNames = ['divergence','vertVelocityTop','temperature', 'salinity']
-varNames = ['temperature', 'salinity']
-varNames = ['temperature', 'salinity','density','potentialDensity']
-for j in range(len(varNames)):
-    plt.subplot(2,2,j+1)
-    var = data.variables[varNames[j]]
-    print('variable:',varNames[j])
-    for i in range(len(cellList)):
-        iCell = int(cellList[i])
-        k = int(maxLevelCell[iCell])
-        varData = var[iTime,iCell,0:k]
-        #varData = np.where(varData>-1e20,varData,np.NAN)
-        plt.plot(varData,np.arange(1,k+1),label='cell '+str(iCell))
-        print('iCell',iCell,'kMax',k)
-        print('varData',varData)
+varNames = ['TEMP','SALT']
+varNames = ['SALT']
+fileNames = ['temperature.nc','salinity.nc']
+for iVar in [0]: #range(len(varNames)):
+    if iVar==0:
+       var = data.variables[varNames[iVar]]
+    elif iVar==1:
+       dataS = xr.open_dataset(runDir+'salinity.nc')
+       print(dataS)
+       var = dataS.variables['SALT']
+    plt.subplot(2,2,iVar+1)
+    var = data.variables[varNames[iVar]]
+    print(var)
+    print(np.shape(var))
+    print('variable:',varNames[iVar])
+    for i in range(len(lonList)):
+      for j in range(len(latList)):
+        varData = var[:,latList[j],lonList[i]]
+        print('lon,lat',t_lat[latList[j]],t_lon[lonList[i]])
+        #var,Data = np.where(varData>-1e20,varData,np.NAN)
+        print(varData)
+        maxk=46
+        plt.plot(varData[0:maxk],np.arange(maxk))
     plt.gca().invert_yaxis()
-    plt.title(varNames[j])
+    plt.title(varNames[iVar])
     plt.grid()
     plt.ylabel('vertical index, k')
     #plt.legend()
@@ -111,7 +99,7 @@ lonMid = (lonMid+180.0)%360.0 - 180.0
 plt.figtext(0.1,0.92,domainName+' '+simName+' '+strXTime+ 
     '  lon,lat: '+str(lonMid)+', '+str(latMid)+'       date: '+today.strftime("%d/%m/%Y"))
 
-figfile = 'vert_profiles_' +simName+'_t'+str(iTime)+ '.png'
+figfile = 'vert_profiles_IC.png'
 print(figfile)
 plt.savefig(figfile, bbox_inches='tight')
 plt.close()
