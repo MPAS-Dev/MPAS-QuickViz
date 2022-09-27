@@ -12,6 +12,7 @@ simName = 's05a'
 iTime = 0
 fileName = 'temperature.nc'
 fileName = 'salinity.nc'
+fileName = 'phc3.0_annual.nc'
 domainName = 'EC60to30'
 
 deg2rad = 3.14159/180.0
@@ -45,9 +46,9 @@ from netCDF4 import Dataset
 
 data = xr.open_dataset(runDir+fileName)
 
-t_lon = data.variables['t_lon']
-t_lat = data.variables['t_lat']
-depth_t = data.variables['depth_t']
+t_lon = data.variables['lon']
+t_lat = data.variables['lat']
+depth_t = data.variables['depth']
 print(t_lon)
 print(t_lat)
 print(depth_t)
@@ -58,16 +59,14 @@ latList = np.where(np.logical_and(t_lat>latMin, t_lat<latMax))[0]
 print('lonList',lonList)
 print('latList',latList)
 fig = plt.figure(figsize=(20,12))
-varNames = ['TEMP','SALT']
-varNames = ['SALT']
-fileNames = ['temperature.nc','salinity.nc']
-for iVar in [0]: #range(len(varNames)):
-    if iVar==0:
-       var = data.variables[varNames[iVar]]
-    elif iVar==1:
-       dataS = xr.open_dataset(runDir+'salinity.nc')
-       print(dataS)
-       var = dataS.variables['SALT']
+varNames = ['temp','salt']
+for iVar in range(len(varNames)):
+    var = data.variables[varNames[iVar]]
+    #if iVar==0:
+    #elif iVar==1:
+    #   dataS = xr.open_dataset(runDir+'salinity.nc')
+    #   print(dataS)
+    #   var = dataS.variables['SALT']
     plt.subplot(2,2,iVar+1)
     var = data.variables[varNames[iVar]]
     print(var)
@@ -79,7 +78,7 @@ for iVar in [0]: #range(len(varNames)):
         print('lon,lat',t_lat[latList[j]],t_lon[lonList[i]])
         #var,Data = np.where(varData>-1e20,varData,np.NAN)
         print(varData)
-        maxk=46
+        maxk=33
         plt.plot(varData[0:maxk],np.arange(maxk))
     plt.gca().invert_yaxis()
     plt.title(varNames[iVar])
@@ -99,7 +98,7 @@ lonMid = (lonMid+180.0)%360.0 - 180.0
 plt.figtext(0.1,0.92,domainName+' '+simName+' '+strXTime+ 
     '  lon,lat: '+str(lonMid)+', '+str(latMid)+'       date: '+today.strftime("%d/%m/%Y"))
 
-figfile = 'vert_profiles_IC.png'
+figfile = 'vert_profiles_phc.png'
 print(figfile)
 plt.savefig(figfile, bbox_inches='tight')
 plt.close()
