@@ -10,9 +10,10 @@ September 2022
 runDir = '/lustre/scratch5/turquoise/mpeterse/runs/220927_EC30to60_zlevel_noPBC_noSmooth/ocean/global_ocean/EC30to60/PHC/init/initial_state/'
 simName = 's05a'
 iTime = 0
+fileName = 'phc3.0_annual.nc'
+fileName = 'PotentialTemperature.01.filled.60levels.PHC.151106.nc'
 fileName = 'temperature.nc'
 fileName = 'salinity.nc'
-fileName = 'phc3.0_annual.nc'
 domainName = 'EC60to30'
 
 deg2rad = 3.14159/180.0
@@ -21,15 +22,14 @@ if domainName == 'EC60to30':
 # global locations
 # Atlantic
     lonMid = 360 -12
-    latMid =  62
+    latMid =  40
     lonWid = 1.4
-    lonWid = 5
 # Pacific
     #lonMid = 175
     #latMid =  30
     #lonWid =   2.0
 
-    latWid = lonWid
+    latWid = 40
     lonMin = lonMid-lonWid/2
     lonMax = lonMid+lonWid/2
     latMin = latMid-latWid/2
@@ -46,9 +46,9 @@ from netCDF4 import Dataset
 
 data = xr.open_dataset(runDir+fileName)
 
-t_lon = data.variables['lon']
-t_lat = data.variables['lat']
-depth_t = data.variables['depth']
+t_lon = data.variables['t_lon']
+t_lat = data.variables['t_lat']
+depth_t = data.variables['depth_t']
 print(t_lon)
 print(t_lat)
 print(depth_t)
@@ -59,8 +59,9 @@ latList = np.where(np.logical_and(t_lat>latMin, t_lat<latMax))[0]
 print('lonList',lonList)
 print('latList',latList)
 fig = plt.figure(figsize=(20,12))
-varNames = ['temp','salt']
-for iVar in range(len(varNames)):
+varNames = ['TEMP','SALT']
+varNames = ['SALT']
+for iVar in [0]:#range(len(varNames)):
     var = data.variables[varNames[iVar]]
     #if iVar==0:
     #elif iVar==1:
@@ -78,13 +79,21 @@ for iVar in range(len(varNames)):
         print('lon,lat',t_lat[latList[j]],t_lon[lonList[i]])
         #var,Data = np.where(varData>-1e20,varData,np.NAN)
         print(varData)
-        maxk=33
-        plt.plot(varData[0:maxk],np.arange(maxk))
+        maxk=60
+        plt.plot(varData[:],np.arange(maxk))
     plt.gca().invert_yaxis()
     plt.title(varNames[iVar])
     plt.grid()
     plt.ylabel('vertical index, k')
     #plt.legend()
+
+    plt.subplot(2,2,iVar+2)
+    plt.imshow(var[:,:,0],aspect=1.5,cmap='jet')
+    plt.ylabel('vertical index, k')
+    plt.xlabel('latitude index')
+    plt.title(varNames[iVar])
+
+
 
 # add information to bottom of figure
 today = date.today()
@@ -98,7 +107,7 @@ lonMid = (lonMid+180.0)%360.0 - 180.0
 plt.figtext(0.1,0.92,domainName+' '+simName+' '+strXTime+ 
     '  lon,lat: '+str(lonMid)+', '+str(latMid)+'       date: '+today.strftime("%d/%m/%Y"))
 
-figfile = 'vert_profiles_phc.png'
+figfile = 'vert_profiles_zonalavg.png'
 print(figfile)
 plt.savefig(figfile, bbox_inches='tight')
 plt.close()

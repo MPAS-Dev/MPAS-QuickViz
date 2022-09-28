@@ -9,10 +9,10 @@ September 2022
 ############################## model files, run dirs
 runDir = '/lustre/scratch5/turquoise/mpeterse/runs/s/'
 #runDir = '/lustre/scratch5/turquoise/mpeterse/runs/220922_soma_find_noise/ocean/soma/32km/long/'
-simName = 's05a'
+simName = 's02n'
 iTime = 0
 fileName = '/output.nc'
-#fileName = '/init.nc'
+fileName = '/init.nc'
 meshName = '/init.nc'
 #domainName = 'soma'
 domainName = 'EC60to30'
@@ -21,15 +21,27 @@ deg2rad = 3.14159/180.0
 rad2deg = 180.0/3.14159
 if domainName == 'EC60to30':
 # global locations
-# Atlantic
+# overflow, Iceland
     lonMid = 360 -12
     latMid =  62
     lonWid = 1.4
     lonWid = 5
-# Pacific
-    #lonMid = 175
-    #latMid =  30
-    #lonWid =   2.0
+# Cape Hattaras
+    lonMid = 360 -74
+    latMid =  34
+    lonWid = 2
+## Pacific North
+#    lonMid = 175
+#    latMid =  -30
+#    lonWid =   2.0
+## Pacific South
+#    lonMid = 170
+#    latMid =  -70
+#    lonWid =   2.0
+## Pacific South-central
+#    lonMid = 360-206
+#    latMid =  -56
+#    lonWid =   2.0
 
     latWid = lonWid
     lonMin = lonMid-lonWid/2
@@ -78,9 +90,9 @@ cellList = np.where(np.logical_and(np.logical_and(np.logical_and(
 
 fig = plt.figure(figsize=(20,12))
 varNames = ['divergence','vertVelocityTop','vertTransportVelocityTop','temperature', 'salinity','density','pressure','zMid']
+varNames = ['temperature', 'salinity','density','potentialDensity']
 varNames = ['divergence','vertVelocityTop','temperature', 'salinity']
 varNames = ['temperature', 'salinity']
-varNames = ['temperature', 'salinity','density','potentialDensity']
 for j in range(len(varNames)):
     plt.subplot(2,2,j+1)
     var = data.variables[varNames[j]]
@@ -107,11 +119,12 @@ try:
     strXTime = str(codecs.decode(xtime[iTime].values))[2:19]
 except:
     strXTime = 'init'
+figfile = 'vert_profiles_' +simName+'_t'+strXTime[0:8]+'_latlon'+str(latMid)+'_'+str(lonMid)+'.png'
 lonMid = (lonMid+180.0)%360.0 - 180.0
 plt.figtext(0.1,0.92,domainName+' '+simName+' '+strXTime+ 
-    '  lon,lat: '+str(lonMid)+', '+str(latMid)+'       date: '+today.strftime("%d/%m/%Y"))
+    '  lon,lat: '+str(lonMid)+', '+str(latMid)+'       date: '+today.strftime("%d/%m/%Y")
+    + '   file: '+figfile)
 
-figfile = 'vert_profiles_' +simName+'_t'+str(iTime)+ '.png'
 print(figfile)
 plt.savefig(figfile, bbox_inches='tight')
 plt.close()
