@@ -14,8 +14,8 @@ iTime = 0
 fileName = '/output.nc'
 fileName = '/init.nc'
 meshName = '/init.nc'
-#domainName = 'soma'
-domainName = 'EC60to30'
+domainName = 'soma'
+#domainName = 'EC60to30'
 
 deg2rad = 3.14159/180.0
 rad2deg = 180.0/3.14159
