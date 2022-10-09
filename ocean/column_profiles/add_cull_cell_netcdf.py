@@ -8,7 +8,9 @@ September 2022
 
 ############################## model files, run dirs
 runDir = '/lustre/scratch5/turquoise/mpeterse/runs/s06k/ocean/global_ocean/QU240/mesh/base_mesh/'
-runDir = '/lustre/scratch5/turquoise/mpeterse/runs/s06m/ocean/global_ocean/QU60/mesh/base_mesh/'
+runDir = '/lustre/scratch5/turquoise/mpeterse/runs/s06r/ocean/global_ocean/QU4/mesh/base_mesh/'
+runDir = '/lustre/scratch5/turquoise/mpeterse/runs/s06o/ocean/global_ocean/QU30/mesh/base_mesh/'
+runDir = '/lustre/scratch5/turquoise/mpeterse/runs/s06s/ocean/global_ocean/WC14/mesh/base_mesh/'
 fileName = 'base_mesh.nc'
 newFileName = 'base_mesh_with_cullCell.nc'
 
@@ -29,10 +31,10 @@ lonMin = -82 + 360
 lonMax = -2 + 360
 
 # small version:
-latMin = 8
-latMax = 47
+latMin = 9
+latMax = 43
 lonMin = -98 + 360
-lonMax = -2 + 360
+lonMax = -6 + 360
 
 print('read: '+runDir+fileName)
 mesh = xr.open_dataset(runDir+fileName)
@@ -57,16 +59,16 @@ cullCell[cellList] = 0
 latMin = 0
 latMax = 17
 lonMin = -100 + 360
-lonMax = -89 + 360
+lonMax = -88.5 + 360
 cellList = np.where(np.logical_and(np.logical_and(np.logical_and(
     latCell>latMin*deg2rad, latCell<=latMax*deg2rad), 
     lonCell>lonMin*deg2rad), lonCell<=lonMax*deg2rad))[0]
 cullCell[cellList] = 1
 
 latMin = 0
-latMax = 14
+latMax = 15
 lonMin = -89 + 360
-lonMax = -84 + 360
+lonMax = -83.8+ 360
 cellList = np.where(np.logical_and(np.logical_and(np.logical_and(
     latCell>latMin*deg2rad, latCell<=latMax*deg2rad), 
     lonCell>lonMin*deg2rad), lonCell<=lonMax*deg2rad))[0]
@@ -74,8 +76,18 @@ cullCell[cellList] = 1
 
 latMin = 0
 latMax = 9
-lonMin = -84 + 360
-lonMax = -76 + 360
+lonMin = -85 + 360
+lonMax = -70 + 360
+cellList = np.where(np.logical_and(np.logical_and(np.logical_and(
+    latCell>latMin*deg2rad, latCell<=latMax*deg2rad), 
+    lonCell>lonMin*deg2rad), lonCell<=lonMax*deg2rad))[0]
+cullCell[cellList] = 1
+
+# remove lake in Venezuela
+latMin = 0
+latMax = 10.8
+lonMin = -74 + 360
+lonMax = -70 + 360
 cellList = np.where(np.logical_and(np.logical_and(np.logical_and(
     latCell>latMin*deg2rad, latCell<=latMax*deg2rad), 
     lonCell>lonMin*deg2rad), lonCell<=lonMax*deg2rad))[0]
