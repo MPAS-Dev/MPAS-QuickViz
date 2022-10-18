@@ -5,11 +5,12 @@ given a certain transect mask
 """
 ############################## transects
 transectNames = ['all']
+#transectNames = ['Denmark Strait AS2']
 #transectNames = ['Faroe Bank Ch N','Faroe Bank Ch','Faroe Shetland Ch']
 
 ############################## months or seasons
-seasonList = ['JFM', 'JAS', 'ANN']
-#seasonList = ['ANN']
+#seasonList = ['JFM', 'JAS', 'ANN']
+seasonList = ['ANN']
 
 ############################## model files, run dirs
 rr = '/lcrc/group/e3sm/ac.mpetersen/scratch/anvil/'
@@ -23,6 +24,8 @@ subdir = 'yrs21-30/clim/mpas/avg/unmasked_EC30to60E2r2/'
 #climofile = 'mpaso_JFM_002101_003003_climo.nc'; seasonName = 'JFM'
 #climofile = 'mpaso_JAS_002107_003009_climo.nc'; seasonName = 'JAS'
 pre = 'timeMonthly_avg_'
+# create mask with command
+# MpasMaskCreator.x init.nc EC30to60E2r2_AMOCTransects_1deg_220802.nc -f transectPython_EWTran_1deg.geojson
 maskfile = 'mask.nc'
 casename = ''; 'E3SM60to30' # no spaces
 climoyearStart = 21
@@ -33,6 +36,8 @@ climoyearEnd = 30
 
 ############################## contours
 sigma0contours = [24.0, 25.0, 26.0, 27.0, 27.2, 27.4, 27.6, 27.7, 27.75, 27.8, 27.82,  27.84, 27.86, 27.87, 27.88, 27.9, 27.95, 28.0, 28.05]
+sigmaRed = [27.88]
+sigmaBlue = [27.84]
 
 #from __future__ import absolute_import, division, print_function, \
 #    unicode_literals
@@ -57,16 +62,20 @@ earthRadius = 6367.44
 figdir = './verticalSections/{}'.format(casename)
 if not os.path.isdir(figdir):
     os.makedirs(figdir)
-figsize = (20, 12)
+figsize = (30, 12)
 figdpi = 300
 colorIndices0 = [0, 10, 28, 57, 85, 113, 125, 142, 155, 170, 198, 227, 242, 255]
 #clevelsT = [-2.0, -1.8, -1.5, -1.0, -0.5, 0.0, 0.5, 2.0, 4.0, 6.0, 8.0, 10., 12.]
 #clevelsS = [30.0, 31.0, 32.0, 33.0, 33.5, 34.0, 34.5, 34.8, 34.85, 34.9, 34.95, 35.0, 35.5]
 # Better for OSNAP:
-clevelsT = [-1.0, -0.5, 0.0, 0.5, 2.0, 2.5, 3.0, 3.5, 4.0, 6.0, 8., 10., 12.]
+#clevelsT = [-1.0, -0.5, 0.0, 0.5, 2.0, 2.5, 3.0, 3.5, 4.0, 6.0, 8., 10., 12.]
 #clevelsT = np.linspace(2.0, 6.0, 13)
-clevelsS = [31.0, 33.0, 33.5, 33.8, 34.2, 34.6, 34.8, 34.85, 34.9, 34.95, 35.0, 35.2, 35.5]
-#clevelsS = np.linspace(34.7, 35.2, 13)
+#clevelsS = [31.0, 33.0, 33.5, 33.8, 34.2, 34.6, 34.8, 34.85, 34.9, 34.95, 35.0, 35.2, 35.5]
+# for overflows
+clevelsT = np.linspace(3.0, 6.0, 13)
+print('clevelsT',clevelsT)
+clevelsS = np.linspace(34.88,35.18, 13)
+print('clevelsS',clevelsS)
 clevelsV = [-0.25, -0.2, -0.15, -0.1, -0.02, 0.0, 0.02, 0.1, 0.2, 0.3, 0.5]
 colormapT = plt.get_cmap('RdBu_r')
 colormapS = cmocean.cm.haline
@@ -214,11 +223,48 @@ for iTransect in range(nTransects):
             #zmax = z[np.max(maxLevelCell)]
             zmax = np.max(bottomDepth)
 
+            # Plot lines
+            figtitle = '{} Layers, {}, {} years={}-{}'.format(
+                       simShortName[iSim], transectName, season, climoyearStart, climoyearEnd)
+            ax = plt.subplot2grid((2, 24), (iSim, 0), colspan=6)  #plt.subplot(2,3,iSim*3+1)
+            #ax.set_facecolor('darkgrey')
+            # new mrp for colormap
+            #if iSim<3: #==1:
+            #    clevelsS = np.linspace(np.ma.min(salt), np.ma.max(salt), 13)
+            #    colormapS = cols.ListedColormap(colormapS(colorIndices))
+            #    colormapS.set_under(underColor)
+            #    colormapS.set_over(overColor)
+            #    cnormS = mpl.colors.BoundaryNorm(clevelsS, colormapS.N)
+                # end new mrp
+            #cf = ax.contourf(x, y, salt, cmap=colormapS, norm=cnormS, levels=clevelsS, extend='both')
+            #cax, kw = mpl.colorbar.make_axes(ax, location='right', pad=0.05, shrink=0.9)
+            #cbar = plt.colorbar(cf, cax=cax, ticks=clevelsS, **kw)
+            #cbar.ax.tick_params(labelsize=12, labelcolor='black')
+            #cbar.set_label('psu', fontsize=12, fontweight='bold')
+            cf = ax.plot(x, y)
+            ax.set_xlim(np.min(x),np.max(x))
+            #if sigma2contours is not None:
+            #    cs = ax.contour(x, y, sigma2, sigma2contours, colors='k', linewidths=1.5)
+            #    cb = plt.clabel(cs, levels=sigma2contours, inline=True, inline_spacing=2, fmt='%2.1f', fontsize=9)
+            #if sigma0contours is not None:
+            #    cs = ax.contour(x, y, sigma0, sigma0contours, colors='k', linewidths=1.5)
+            #    cb = plt.clabel(cs, levels=sigma0contours, inline=True, inline_spacing=2, fmt='%5.2f', fontsize=8)
+            ax.set_ylim(0, zmax)
+            ax.set_xlabel('Distance (km)', fontsize=12, fontweight='bold')
+            ax.set_ylabel('Depth (m)', fontsize=12, fontweight='bold')
+            ax.set_title(figtitle, fontsize=12, fontweight='bold')
+            ax.annotate('lat={:5.2f}'.format(180.0/np.pi*latCells[0]), xy=(0, -0.1), xycoords='axes fraction', ha='center', va='bottom')
+            ax.annotate('lon={:5.2f}'.format(180.0/np.pi*lonCells[0]), xy=(0, -0.15), xycoords='axes fraction', ha='center', va='bottom')
+            ax.annotate('lat={:5.2f}'.format(180.0/np.pi*latCells[-1]), xy=(1, -0.1), xycoords='axes fraction', ha='center', va='bottom')
+            ax.annotate('lon={:5.2f}'.format(180.0/np.pi*lonCells[-1]), xy=(1, -0.15), xycoords='axes fraction', ha='center', va='bottom')
+            ax.invert_yaxis()
+
             # Plot sections
             #  T first
             figtitle = '{} Temperature, {}, {} years={}-{}'.format(
                        simShortName[iSim], transectName, season, climoyearStart, climoyearEnd)
-            ax = plt.subplot(2,2,iSim*2+1)
+            ax = plt.subplot2grid((2, 24), (iSim, 7), colspan=8)  #plt.subplot(2,3,iSim*3+1)
+            #ax = plt.subplot(2,3,iSim*3+2)
             ax.set_facecolor('darkgrey')
             cf = ax.contourf(x, y, temp, cmap=colormapT, norm=cnormT, levels=clevelsT, extend='both')
             #cf = ax.pcolormesh(x, y, temp, cmap=colormapT, norm=cnormT)
@@ -232,6 +278,16 @@ for iTransect in range(nTransects):
             if sigma0contours is not None:
                 cs = ax.contour(x, y, sigma0, sigma0contours, colors='k', linewidths=1.5)
                 cb = plt.clabel(cs, levels=sigma0contours, inline=True, inline_spacing=2, fmt='%5.2f', fontsize=8)
+                try:
+                    cs = ax.contour(x, y, sigma0, sigmaRed, colors='r', linewidths=1.5)
+                    cb = plt.clabel(cs, levels=sigmaRed, inline=True, inline_spacing=2, fmt='%5.2f', fontsize=8)
+                except:
+                    print('warning: contour did not work')
+                try:
+                    cs = ax.contour(x, y, sigma0, sigmaBlue, colors='b', linewidths=1.5)
+                    cb = plt.clabel(cs, levels=sigmaBlue, inline=True, inline_spacing=2, fmt='%5.2f', fontsize=8)
+                except:
+                    print('warning: contour did not work')
             ax.set_ylim(0, zmax)
             ax.set_xlabel('Distance (km)', fontsize=12, fontweight='bold')
             ax.set_ylabel('Depth (m)', fontsize=12, fontweight='bold')
@@ -245,7 +301,8 @@ for iTransect in range(nTransects):
             #  then S
             figtitle = '{} Salinity, {}, {} years={}-{}'.format(
                        simShortName[iSim], transectName, season, climoyearStart, climoyearEnd)
-            ax = plt.subplot(2,2,iSim*2+2)
+            ax = plt.subplot2grid((2, 24), (iSim, 16), colspan=8)  #plt.subplot(2,3,iSim*3+1)
+            #ax = plt.subplot(2,3,iSim*3+3)
             ax.set_facecolor('darkgrey')
             # new mrp for colormap
             #if iSim<3: #==1:
@@ -260,13 +317,23 @@ for iTransect in range(nTransects):
             cbar = plt.colorbar(cf, cax=cax, ticks=clevelsS, **kw)
             cbar.ax.tick_params(labelsize=12, labelcolor='black')
             cbar.set_label('psu', fontsize=12, fontweight='bold')
-            cf = ax.plot(x, y)
+            #cf = ax.plot(x, y)
             #if sigma2contours is not None:
             #    cs = ax.contour(x, y, sigma2, sigma2contours, colors='k', linewidths=1.5)
             #    cb = plt.clabel(cs, levels=sigma2contours, inline=True, inline_spacing=2, fmt='%2.1f', fontsize=9)
-            #if sigma0contours is not None:
-            #    cs = ax.contour(x, y, sigma0, sigma0contours, colors='k', linewidths=1.5)
-            #    cb = plt.clabel(cs, levels=sigma0contours, inline=True, inline_spacing=2, fmt='%5.2f', fontsize=8)
+            if sigma0contours is not None:
+                cs = ax.contour(x, y, sigma0, sigma0contours, colors='k', linewidths=1.5)
+                cb = plt.clabel(cs, levels=sigma0contours, inline=True, inline_spacing=2, fmt='%5.2f', fontsize=8)
+                try:
+                    cs = ax.contour(x, y, sigma0, sigmaRed, colors='r', linewidths=1.5)
+                    cb = plt.clabel(cs, levels=sigmaRed, inline=True, inline_spacing=2, fmt='%5.2f', fontsize=8)
+                except:
+                    print('warning: contour did not work')
+                try:
+                    cs = ax.contour(x, y, sigma0, sigmaBlue, colors='b', linewidths=1.5)
+                    cb = plt.clabel(cs, levels=sigmaBlue, inline=True, inline_spacing=2, fmt='%5.2f', fontsize=8)
+                except:
+                    print('warning: contour did not work')
             ax.set_ylim(0, zmax)
             ax.set_xlabel('Distance (km)', fontsize=12, fontweight='bold')
             ax.set_ylabel('Depth (m)', fontsize=12, fontweight='bold')
