@@ -4,7 +4,7 @@
         {
             "type": "Feature",
             "properties": {
-                "name": "Denmark Strait cs2",
+                "name": "Denmark Strait CS2",
                 "tags": "standard_transport_sections;arctic_sections",
                 "object": "transect",
                 "component": "ocean",
@@ -28,7 +28,7 @@
         {
             "type": "Feature",
             "properties": {
-                "name": "Denmark Strait cs3",
+                "name": "Denmark Strait CS3",
                 "tags": "standard_transport_sections;arctic_sections",
                 "object": "transect",
                 "component": "ocean",
@@ -52,7 +52,7 @@
         {
             "type": "Feature",
             "properties": {
-                "name": "Denmark Strait cs4",
+                "name": "Denmark Strait CS4",
                 "tags": "standard_transport_sections;arctic_sections",
                 "object": "transect",
                 "component": "ocean",
@@ -76,7 +76,7 @@
         {
             "type": "Feature",
             "properties": {
-                "name": "Denmark Strait cs5",
+                "name": "Denmark Strait CS5",
                 "tags": "standard_transport_sections;arctic_sections",
                 "object": "transect",
                 "component": "ocean",
@@ -100,7 +100,7 @@
         {
             "type": "Feature",
             "properties": {
-                "name": "Denmark Strait cs6",
+                "name": "Denmark Strait CS6",
                 "tags": "standard_transport_sections;arctic_sections",
                 "object": "transect",
                 "component": "ocean",
@@ -124,7 +124,7 @@
         {
             "type": "Feature",
             "properties": {
-                "name": "Denmark Strait cs7",
+                "name": "Denmark Strait CS7",
                 "tags": "standard_transport_sections;arctic_sections",
                 "object": "transect",
                 "component": "ocean",
@@ -148,7 +148,7 @@
         {
             "type": "Feature",
             "properties": {
-                "name": "Denmark Strait cs8",
+                "name": "Denmark Strait CS8",
                 "tags": "standard_transport_sections;arctic_sections",
                 "object": "transect",
                 "component": "ocean",
@@ -172,7 +172,7 @@
         {
             "type": "Feature",
             "properties": {
-                "name": "Denmark Strait cs9",
+                "name": "Denmark Strait CS9",
                 "tags": "standard_transport_sections;arctic_sections",
                 "object": "transect",
                 "component": "ocean",
@@ -196,7 +196,7 @@
         {
             "type": "Feature",
             "properties": {
-                "name": "Denmark Strait",
+                "name": "Denmark Strait CS1",
                 "tags": "standard_transport_sections;arctic_sections",
                 "object": "transect",
                 "component": "ocean",
@@ -1542,7 +1542,7 @@
     {
       "type": "Feature",
       "properties": {
-        "name": "Denmark Strait as1",
+        "name": "Denmark Strait AS1",
         "component": "ocean",
         "tags": "",
         "author": "Mark Petersen",
@@ -1565,7 +1565,7 @@
     {
       "type": "Feature",
       "properties": {
-        "name": "Denmark Strait as2",
+        "name": "Denmark Strait",
         "component": "ocean",
         "tags": "",
         "author": "Mark Petersen",
@@ -1588,7 +1588,7 @@
     {
       "type": "Feature",
       "properties": {
-        "name": "Denmark Strait as3",
+        "name": "Denmark Strait AS3",
         "component": "ocean",
         "tags": "",
         "author": "Mark Petersen",
