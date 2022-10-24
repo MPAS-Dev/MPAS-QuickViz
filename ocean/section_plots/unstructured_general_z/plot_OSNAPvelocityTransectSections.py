@@ -324,12 +324,12 @@ for iTransect in range(nTransects):
                 cbar.set_ticklabels(yticklabelsV)
                 cbar.ax.tick_params(labelsize=12, labelcolor='black')
             # add density contours:
-            #if sigma2contours is not None:
-            #    cs = ax.contour(x, y, sigma2, sigma2contours, colors='k', linewidths=1.5)
-            #    cb = plt.clabel(cs, levels=sigma2contours, inline=True, inline_spacing=2, fmt='%2.1f', fontsize=9)
-            #if sigma0contours is not None:
-            #    cs = ax.contour(x, y, sigma0, sigma0contours, colors='k', linewidths=1.5)
-            #    cb = plt.clabel(cs, levels=sigma0contours, inline=True, inline_spacing=2, fmt='%5.2f', fontsize=8)
+            if sigma2contours is not None:
+                cs = ax.contour(x, y, sigma2, sigma2contours, colors='k', linewidths=1.5)
+                cb = plt.clabel(cs, levels=sigma2contours, inline=True, inline_spacing=2, fmt='%2.1f', fontsize=9)
+            if sigma0contours is not None:
+                cs = ax.contour(x, y, sigma0, sigma0contours, colors='k', linewidths=1.5)
+                cb = plt.clabel(cs, levels=sigma0contours, inline=True, inline_spacing=2, fmt='%5.2f', fontsize=8)
             #ax.set_ylim(0, zmax)
             ax.set_ylim(0, 4000)
             if transectNames == 'OSNAP section East':
