@@ -1,0 +1,13 @@
+aggregateDiffusivity.ipynb
+aggregate_particle_lonlat_rads.py
+diffusivity_binning_complete.py
+latlon_coordinate_transforms.py
+make_links.sh
+mesh10km.nc
+mesh.nc
+mpas_xarray.py
+otherplot.py
+parallel_aggregate_realizations.sh
+parallel_diffusivity_binning_complete.sh
+pathlineTrajectories.ipynb
+run_realization_diffusivity.sh
