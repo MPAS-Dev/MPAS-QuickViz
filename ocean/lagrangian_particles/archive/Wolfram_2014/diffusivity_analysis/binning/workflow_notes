@@ -1,0 +1,8 @@
+Build out particle data sets for realizations (sequential run with particle resets):
+  parallel_aggreate.sh
+or
+  on_node_aggregate.sh or parallel_aggregate_realizations.sh for folders with realizations in them
+
+Turn realizations into dispersion and diffusivities via clusters:
+  parallel_diffusivity_binning_complete.sh
+

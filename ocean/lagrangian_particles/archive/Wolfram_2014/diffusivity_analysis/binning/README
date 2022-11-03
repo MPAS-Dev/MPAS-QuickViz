@@ -1,0 +1,25 @@
+Analysis steps:
+
+1. aggregate_particle_lonlat_rads.py on parse *.nc files in different realization directories
+2. diffusivity_binning_complete.py to do the analysis
+3. Plotting via ipython notebooks or diffusivity_binning_complete_plot.py 
+
+
+Helper modules/files:
++ file_handling.py                  
++ latlon_coordinate_transforms.py  
++ PlotSettings.py
++ GeneralTriangulation.py
++ compute_diffusivity.py
++ coarse_sampling.npz
++ comp_funcs.py
++ EllipsePlots.py
++ diffusivity_binning_complete_plot.py  
++ lat-1.npy                       
++ lon-1.npy                        
++ diffusivity_binning_complete.py       
++ rainbow_desaturated.xml
++ convert_ParaView_xml_to_matplotlib_colormap.py  
++ hullsimplicies-1.npy     
++ compute_binning_complete.sh                     
++ run_binning_complete.sh
