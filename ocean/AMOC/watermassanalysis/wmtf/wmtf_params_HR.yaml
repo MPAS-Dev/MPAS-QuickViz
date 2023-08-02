@@ -1,0 +1,15 @@
+paths:
+    prefix: 20210421_sim7_CORE_18to6v3.mpaso.hist.am.timeSeriesStatsMonthly
+    results: /global/cfs/cdirs/m4259/lvroekel/run_051_060
+    meshfile: /global/cfs/cdirs/e3sm/inputdata/ocn/mpas-o/oRRS18to6v3/oRRS18to6v3.171116.nc
+    maskfile: /pscratch/sd/b/bmoorema/maskfiles/oRRS18to6v3_NAmodewatermasks20230731.nc
+    out: /pscratch/sd/b/bmoorema/results/wmtf
+
+yearrange:
+    start: 51
+    end: 61
+
+sigmaparams:
+    start: 19
+    end: 29
+    binsize: 0.1
