@@ -1,4 +1,4 @@
-# WMTF Development Module
+# WMTR Development Module
 
 import numpy as np
 import xarray as xr
@@ -69,7 +69,7 @@ def calc_buoyancy_fluxes(variables, P=0):
     # Calculate state variables
     S, T = [variables[name] for name in ('salinity', 'temperature')]
     sigma = rho(S, T, P) - 1000
-    salt_factor = drhods(S, T, P) / rho_0 * S
+    salt_factor = -drhods(S, T, P) / rho_0 * S
     heat_factor = drhodt(S, T, P) / rho_0 / cpsw
     
     # Calculate buoyancy fluxes
@@ -92,32 +92,6 @@ def calc_tr(bflux, area, mask, binsize):
     F = np.sum(bflux[mask] * area[mask]) / binsize * 1e-6
     
     return F
-
-
-def calc_fm(tr): #, sigma):
-    """Calculate total transformations and formations
-    """    
-
-    # Calculate totals
-    tr['total'] = tr['heat'] + tr['salt']
-    tr['total_ice'] = tr['heat_ice'] + tr['salt_ice']
-    tr['total_noice'] = tr['total'] - tr['total_ice']
-
-    # Define mode water regions
-    #mwregions = {
-    #    'STMW': [26.2, 27],
-    #    'SPMW': [27.2, 29],
-    #}
-
-    # Calculate watermass formation curves and mode water formation
-    fm = {} #, {region: {} for region in mwregions}
-    for name in tr:
-        fm[name] = -np.diff(tr[name], axis=2, append=0)
-        #for region in mwregions:
-            #mask = build_sigma_mask(sigma, mwregions[region])
-            #mw[region][name] = np.sum(np.maximum(fm[name][:, mask], 0), axis=1)
-
-    return {'tr': tr, 'fm': fm} #, 'mw': mw}
 
 
 def load_flux_definitions():
@@ -212,54 +186,46 @@ def parse_params(params_path):
     return paths, years, sigmarange, binsize
 
 
-def write_output(wmtf, coords, paths):
+def write_output(wmtr, coords, paths):
     """Write wmtf results to netCDF. Filename conventions are taken from
     the results file prefix and the daterange
     """
 
     # Date string for output filename
-    datestr = '_'.join([time.strftime('%Y%m%d') for time in coords[0][[0, -1]]])
+    datestr = '_'.join(time.strftime('%Y%m%d') for time in coords[0][[0, -1]])
+    filename = paths['prefix'].split('.')[0] + f'.wmtr_{datestr}.nc'
+    filename = os.path.join(paths['out'], filename)
 
-    # Construct coordinates dict
+    # Construct coordinates and variables dicts
     dims = ['time', 'regions', 'sigmabins']
-    coordinates = {name: ([name], coord) for name, coord in zip(dims, coords)}
+    coordinates = {name: (name, coord) for name, coord in zip(dims, coords)}
+    variables = {name: (dims, wmtr[name]) for name in wmtr}
 
-    # Loop through categories
-    for ctgy in wmtf:
-
-        # Build filename
-        filename = paths['prefix'].split('.')[0] + f'.watermasses_{datestr}_{ctgy}.nc'
-        filename = os.path.join(paths['out'], filename)
-
-        # Construct variable dict
-        variables = {name: (dims, wmtf[ctgy][name]) for name in wmtf[ctgy]}
-        variables.update(coordinates)
-
-        # Write to netCDF
-        ds = xr.Dataset(variables)
-        ds.to_netcdf(filename)
+    # Write to netCDF
+    ds = xr.Dataset(variables, coordinates)
+    ds.to_netcdf(filename)
 
 
-def run_wmtf(params_path):
+def run_wmtr(params_path):
     """Run the water mass transformation code for years and paths dict specified.
     `paths` must include `results`, `prefix`, `meshfile` and `maskfile` fields
     """
-    
+
     # Parse parameters
     paths, years, sigmarange, binsize = parse_params(params_path)
-    
+
     # Filenames, mesh variables, sigma bins, flux definitions
     times, filenames, nfiles = build_MPASO_filenames(years, paths)
     area, subdomain, regionnames, regionmasks, nregions = load_MPASO_mesh(paths)
     sigmabins, nbins = build_sigma_bins(sigmarange, binsize)
     fluxnames = load_flux_definitions()        
-    
+
     # Initialize transformation dict
-    tr = {name: np.zeros((nfiles, nregions, nbins)) for name in fluxnames}
-    
+    wmtr = {name: np.zeros((nfiles, nregions, nbins)) for name in fluxnames}
+
     # Loop through filenames
     for t, filename in zip(tqdm(range(nfiles)), filenames):
-        
+
         # Load results and calculate buoyancy fluxes
         variables = load_MPASO_results(filename, fluxnames, subdomain)
         bfluxes, sigma = calc_buoyancy_fluxes(variables)
@@ -269,8 +235,7 @@ def run_wmtf(params_path):
 
             # Apply region mask to flux variables
             bf_r = {name: bfluxes[name][rmask] for name in bfluxes}
-            sigma_r = sigma[rmask]
-            area_r = area[rmask]
+            sigma_r, area_r = sigma[rmask], area[rmask]
 
             # Loop through density bins
             for i in range(nbins):
@@ -278,14 +243,11 @@ def run_wmtf(params_path):
                 # Create density mask and calculate transformation term F (area integral)
                 dmask = build_sigma_mask(sigma_r, sigmabins[i:i+2])
                 for name in fluxnames:
-                    tr[name][t, r, i] = calc_tr(bf_r[name], area_r, dmask, binsize)
-
-    # Calculate totals and formation
-    wmtf = calc_fm(tr)
+                    wmtr[name][t, r, i] = calc_tr(bf_r[name], area_r, dmask, binsize)
 
     # Save output
-    write_output(wmtf, [times, regionnames, sigmabins], paths)
+    write_output(wmtr, [times, regionnames, sigmabins], paths)
 
 
 if __name__ == "__main__":
-    run_wmtf(sys.argv[1])
+    run_wmtr(sys.argv[1])
