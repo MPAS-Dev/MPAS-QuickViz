@@ -1,13 +1,10 @@
 paths:
-    prefix: 20210421_sim7_CORE_60to30E2r2.mpaso.hist.am.timeSeriesStatsMonthly
-    results: /pscratch/sd/l/lvroekel/LR/run_001_062
+    prefix: 20210421_sim7_CORE_60to30E2r2.mpaso.hist.am.timeSeriesStatsMonthly.
+    results:
+        - /pscratch/sd/l/lvroekel/LR/run_001_062
     meshfile: /global/cfs/cdirs/e3sm/inputdata/ocn/mpas-o/EC30to60E2r2/ocean.EC30to60E2r2.210210.nc
     maskfile: /pscratch/sd/b/bmoorema/maskfiles/EC30to60E2r2_NAmodewatermasks20230731.nc
-    out: /pscratch/sd/b/bmoorema/results/wmtf
-
-yearrange:
-    start: 1
-    end: 64
+    out: /pscratch/sd/b/bmoorema/results/wmtr
 
 sigmaparams:
     start: 19
