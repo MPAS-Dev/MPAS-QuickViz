@@ -7,6 +7,7 @@
 """
 
 import numpy as np
+import yaml
 from scipy.interpolate import griddata
 from dateutil.parser import parse
 from matplotlib import pyplot as plt
@@ -24,42 +25,13 @@ def xy2cartopy(ax, xy):
     return xy_cartopy
 
 
-def get_clabel_positions(ax, season, mesh, timestr):
-    """Hard-coded `clabel` positions for sigma contours
+def get_clabel_positions(ax, points):
+    """Retreive hard-coded `clabel` positions for sigma contours
     """
     
-    # Manual clabel positioning
-    clabel_dict = {
-        'all': {
-            '60to30E2r2': {
-                '1947-1956': [(0.37, 0.28), (0.5, 0.33), (0.7, 0.40), (0.62, 0.55), (0.68, 0.64), (0.77, 0.78)],
-                '1997-2006': [(0.37, 0.28), (0.5, 0.33), (0.7, 0.41), (0.60, 0.56), (0.70, 0.66), (0.76, 0.87)],
-            },
-            '18to6v3': {
-                '1947-1956': [(0.37, 0.29), (0.55, 0.33), (0.7, 0.40), (0.62, 0.53), (0.68, 0.64), (0.77, 0.78)],
-                '1997-2006': [(0.40, 0.28), (0.55, 0.33), (0.7, 0.38), (0.72, 0.45), (0.68, 0.60), (0.77, 0.77)],
-            },
-        },
-        'DJF': {
-            '60to30E2r2': {
-                '1947-1956': [(0.25, 0.21), (0.35, 0.24), (0.50, 0.30), (0.7, 0.39), (0.62, 0.57), (0.70, 0.68)],
-                '1997-2006': [(0.25, 0.23), (0.35, 0.24), (0.50, 0.30), (0.7, 0.39), (0.75, 0.52), (0.75, 0.80)],
-            },
-            '18to6v3': {
-                '1947-1956': [(0.25, 0.21), (0.35, 0.24), (0.50, 0.29), (0.7, 0.36), (0.62, 0.54), (0.64, 0.65)],
-                '1997-2006': [(0.25, 0.21), (0.35, 0.24), (0.55, 0.28), (0.7, 0.37), (0.62, 0.55), (0.70, 0.68)],
-            },
-        },
-    }
-    
-    # Select positions for panel properties
-    try:
-        points = clabel_dict[season][mesh][timestr]
-    except:
-        raise ValueError(f'Uknown season {season}, mesh {mesh} or timestring {timestr}')
-    
-    # Convert to cartopy coordinates
-    points = [xy2cartopy(ax, xy) for xy in points]
+    # Parse points from dict and convert from axis coords to cartopy
+    xy = [[float(val) for val in points[name].split(',')] for name in points]
+    points = [xy2cartopy(ax, (x, y)) for x, y in zip(*xy)]
 
     return points
 
@@ -151,11 +123,19 @@ def build_variables_spatial(ds, varnames, timeranges, seasons=None):
     return lon, lat, plotvars
 
 
-def plot_variable_spatial(plotvars, lon, lat, varname, units, season='all', scale=1, clims=None, cmap=None):
+def plot_variable_spatial(
+    plotvars, lon, lat, varname, units,
+    season='all', scale=1, clims=None, cmap=None,
+    params_path='../yaml/viz_params.yaml',
+):
     """Plot specified variable over spatial region. Hard-coded for two timeranges,
     two meshes and the residual between meshes. These categories must be consistent
     with the structure of the `plotvars` dictionary.
     """
+    
+    # Load viz params
+    with open(params_path) as f:
+        viz_params = yaml.safe_load(f)
     
     # General definitions
     meshes, tstrs = list(plotvars), list(list(plotvars.values())[0])[::-1]
@@ -203,7 +183,8 @@ def plot_variable_spatial(plotvars, lon, lat, varname, units, season='all', scal
             )
 
             # Add contour labels
-            points = get_clabel_positions(ax, season, mesh, tstr)
+            points = viz_params['sigma_clabels'][season][mesh][tstr]
+            points = get_clabel_positions(ax, points)
             ax.clabel(cs, inline=1, manual=points)
             #[ax.plot(*xy, 'ro') for xy in points]
         
