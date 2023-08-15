@@ -7,7 +7,6 @@
 """
 
 import numpy as np
-import yaml
 from scipy.interpolate import griddata
 from dateutil.parser import parse
 from matplotlib import pyplot as plt
@@ -123,31 +122,33 @@ def build_variables_spatial(ds, varnames, timeranges, seasons=None):
     return lon, lat, plotvars
 
 
-def plot_variable_spatial(
-    plotvars, lon, lat, varname, units,
-    season='all', scale=1, clims=None, cmap=None,
-    params_path='../yaml/viz_params.yaml',
-):
+def plot_variable_spatial(plotvars, lon, lat, varname, units, scale=1, clims=None, cmap=None):
     """Plot specified variable over spatial region. Hard-coded for two timeranges,
     two meshes and the residual between meshes. These categories must be consistent
     with the structure of the `plotvars` dictionary.
     """
     
-    # Load viz params
-    with open(params_path) as f:
-        viz_params = yaml.safe_load(f)
-    
     # General definitions
     meshes, tstrs = list(plotvars), list(list(plotvars.values())[0])[::-1]
     levels1, levels2, ticks1, ticks2 = parse_contour_levels(clims)
+    
+    # Sigma contour level specs
+    sigma_levels = {
+        'levels'    : [25, 25.5, 26, 26.5, 27, 27.5],
+        'linestyles': ['-', '--', '-', '--', '-', '--'],
+        'colors'    : ['k', 'k', 'gray', 'gray', 'lightgray', 'lightgray'],
+    }
 
-    # Make plot area
+    # Plot and panel attributes
     proj_ref = crs.PlateCarree()
     kwargs = {
         'figsize': (12, 8),
         'subplot_kw': {'projection': crs.LambertConformal(-40, 0)},
         'gridspec_kw': {'hspace': 0.05, 'wspace': 0.05},
     }
+    plot_kwargs = {'extend': 'both', 'transform': proj_ref, 'zorder': 0}
+    
+    # Make plot area
     fig, axs = plt.subplots(2, 3, **kwargs)
     
     # Plot cartopy features
@@ -171,28 +172,21 @@ def plot_variable_spatial(
 
             # Plot variable
             c1 = ax.contourf(
-                lon, lat, plotvars[mesh][tstr][varname] * scale, levels=levels1,
-                cmap=cmap, extend='both', transform=proj_ref, zorder=0,
+                lon, lat, plotvars[mesh][tstr][varname] * scale,
+                levels=levels1, cmap=cmap, **plot_kwargs,
             )
 
             # Plot sigma contours
             cs = ax.contour(
                 lon, lat, plotvars[mesh][tstr]['sigma'],
-                levels=np.arange(25, 28.1, 0.5), colors='k',
-                transform=proj_ref, zorder=0,
+                **sigma_levels, **plot_kwargs,
             )
-
-            # Add contour labels
-            points = viz_params['sigma_clabels'][season][mesh][tstr]
-            points = get_clabel_positions(ax, points)
-            ax.clabel(cs, inline=1, manual=points)
-            #[ax.plot(*xy, 'ro') for xy in points]
         
-        # Print residual
+        # Plot residual
         residual = np.subtract(*[plotvars[mesh][tstr][varname] for mesh in meshes])
         c2 = row[2].contourf(
-            lon, lat, residual * scale, levels=levels2,
-            cmap='RdBu_r', extend='both', transform=proj_ref, zorder=0,
+            lon, lat, residual * scale,
+            levels=levels2, cmap='RdBu_r', **plot_kwargs,
         )
 
     # Add colorbars
