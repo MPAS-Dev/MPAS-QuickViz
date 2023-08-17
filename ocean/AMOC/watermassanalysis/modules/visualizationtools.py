@@ -7,32 +7,11 @@
 """
 
 import numpy as np
-from scipy.interpolate import griddata
-from dateutil.parser import parse
+import xarray as xr
+import os
+import pyremap
 from matplotlib import pyplot as plt
-from cartopy import crs, feature
 from tqdm import tqdm
-from fastjmd95 import rho
-
-
-def xy2cartopy(ax, xy):
-    """Convert from `xy` in axis coords to cartopy data coords
-    """
-
-    xy_cartopy = ax.transData.inverted().transform(ax.transAxes.transform(xy))
-
-    return xy_cartopy
-
-
-def get_clabel_positions(ax, points):
-    """Retreive hard-coded `clabel` positions for sigma contours
-    """
-    
-    # Parse points from dict and convert from axis coords to cartopy
-    xy = [[float(val) for val in points[name].split(',')] for name in points]
-    points = [xy2cartopy(ax, (x, y)) for x, y in zip(*xy)]
-
-    return points
 
 
 def parse_contour_levels(clims):
@@ -63,99 +42,100 @@ def parse_contour_levels(clims):
     return levels1, levels2, ticks1, ticks2
 
 
-def parse_timeranges(timeranges):
-    """Parse a list of timerange `str` pairs into a `dict` of key, value pairs
-    Returns: `dict('yyyy-yyyy': [datetime(yyyy, m, d), datetime(yyyy, m, d)], ...)`
+def build_remapper(
+    mesh, varnames,
+    mesh_path='/global/cfs/cdirs/e3sm/inputdata/ocn/mpas-o/',
+    mapping_path='/global/cfs/cdirs/m4259/mapping_files/',
+):
+    """Build a `pyremap.Remapper` object for the requested mesh. Hardcoded
+    to use an existing mapping file to 0.5x0.5degree. Also constructs
+    a full domain dataset with the requested varnames initialized to nan.
     """
     
-    # Parse timeranges to dict
-    timedict = {}
-    for timerange in timeranges:
-        values = [parse(t) for t in timerange]
-        name = '-'.join(str(t.year) for t in values)
-        timedict[name] = values
+    # Mesh file name dictionary
+    meshfiles = {
+        'EC30to60E2r2': 'ocean.EC30to60E2r2.210210.nc',
+        'oRRS18to6v3': 'oRRS18to6v3.171116.nc',
+    }
     
-    return timedict
+    # Build remapper object
+    meshfile = os.path.join(mesh_path, mesh, meshfiles[mesh])
+    mappingfile = os.path.join(mapping_path, f'map_{mesh}_to_0.5x0.5degree_bilinear.nc')
+    meshdescriptor = pyremap.MpasMeshDescriptor(meshfile, mesh)
+    lonlatdescriptor = pyremap.get_lat_lon_descriptor(dLon=0.5, dLat=0.5)
+    remapper = pyremap.Remapper(meshdescriptor, lonlatdescriptor, mappingfile)
+    
+    # Initialize full domain DataArray to nan
+    with xr.open_dataset(meshfile) as ds:
+        nan = np.empty(len(ds.nCells)) * np.nan
+    da_full = xr.DataArray(nan, dims='nCells')
+    
+    return remapper, da_full
 
 
-def build_variables_spatial(ds, varnames, timeranges, seasons=None):
-    """Prebuild plotting variables to make plotting faster. Uses
-    `scipy.interpolate.griddata` for regridding.
+def build_variables_spatial(ds_in, varnames, timeranges, bbox=None, months=None):
+    """Prebuild plotting variables to make plotting faster. Uses `pyremap` for
+    remapping to lon lat.
     """
     
-    # Define plotting seasons
-    if seasons is None:
-        seasons = ['DJF', 'MAM', 'JJA', 'SON']
+    # Define lon lat xarray slicing args if bbox is provided
+    if bbox is not None:
+        bbox_args = {'lon': slice(*bbox[:2]), 'lat': slice(*bbox[2:])}
     
-    # Define gridded lon and lat
-    lon, lat = np.arange(-100, 20, 0.1), np.arange(0, 80, 0.1)
-    xi = tuple(np.meshgrid(lon, lat))
-    
-    # Prepare plotvars dict
-    plotvars = {mesh: {} for mesh in ds}
+    # Initialize output dict
+    ds_lonlat = {mesh: {} for mesh in ds_in}
     
     # Loop through meshes
-    for mesh in ds:
+    for mesh in ds_in:
         
-        # Extract coords for given mesh
-        x = tuple(ds[mesh][name].values for name in ('lon', 'lat'))
+        # Build remapper objects
+        remapper, da_full = build_remapper(mesh, varnames)
         
         # Loop through timeranges
-        for tstr in timeranges:
+        for timerange in timeranges:
             
+            # Initialize lonlat dataset
+            tstring = '-'.join(str(t.year) for t in timerange)
+            ds_lonlat[mesh][tstring] = xr.Dataset()
+
             # Extract timerange and seasons
-            ds_slc = ds[mesh].sel(time=slice(*timeranges[tstr]))
-            tindex = [season in seasons for season in ds_slc.time.dt.season]
-            ds_slc = ds_slc.sel(time=tindex)
+            ds_tslc = ds_in[mesh].sel(time=slice(*timerange))
+            if months is not None:
+                tindex = [month in months for month in ds_tslc.time.dt.month]
+                ds_tslc = ds_tslc.sel(time=tindex)
             
-            # Extract variables
-            plotvars[mesh][tstr] = {name: ds_slc[name].mean(dim='time').values for name in varnames}
+            # Load variables on subdomain into full domain
+            cellindex = ds_tslc.nCells.values
+            for name in varnames:
+                da_full.loc[{'nCells': cellindex}] = ds_tslc[name].mean(dim='time')
+                ds_lonlat[mesh][tstring][name] = remapper.remap(da_full)
             
-            # Calculate sigma
-            S, T = [ds_slc[name].values for name in ('salinity', 'temperature')]
-            plotvars[mesh][tstr]['sigma'] = rho(S, T, 0).mean(axis=0) - 1000
-            
-            # Interpolate to grid
-            for name in tqdm(plotvars[mesh][tstr], desc=f'Building {mesh} {tstr}'):
-                plotvars[mesh][tstr][name] = griddata(x, plotvars[mesh][tstr][name], xi)
+            # Slice according to bbox
+            if bbox is not None:
+                ds_lonlat[mesh][tstring] = ds_lonlat[mesh][tstring].sel(**bbox_args)
     
-    return lon, lat, plotvars
+    return ds_lonlat
 
 
-def plot_variable_spatial(plotvars, lon, lat, varname, units, scale=1, clims=None, cmap=None):
+def plot_variable_spatial(ds, varname, units, scale=1, clims=None, cmap=None):
     """Plot specified variable over spatial region. Hard-coded for two timeranges,
     two meshes and the residual between meshes. These categories must be consistent
     with the structure of the `plotvars` dictionary.
     """
     
     # General definitions
-    meshes, tstrs = list(plotvars), list(list(plotvars.values())[0])[::-1]
+    meshes, tstrs = list(ds), list(list(ds.values())[0])[::-1]
     levels1, levels2, ticks1, ticks2 = parse_contour_levels(clims)
     
     # Sigma contour level specs
     sigma_levels = {
-        'levels'    : [25, 25.5, 26, 26.5, 27, 27.5],
+        'levels'    : np.arange(25, 28, 0.5),
         'linestyles': ['-', '--', '-', '--', '-', '--'],
         'colors'    : ['k', 'k', 'gray', 'gray', 'lightgray', 'lightgray'],
     }
-
-    # Plot and panel attributes
-    proj_ref = crs.PlateCarree()
-    kwargs = {
-        'figsize': (12, 8),
-        'subplot_kw': {'projection': crs.LambertConformal(-40, 0)},
-        'gridspec_kw': {'hspace': 0.05, 'wspace': 0.05},
-    }
-    plot_kwargs = {'extend': 'both', 'transform': proj_ref, 'zorder': 0}
     
     # Make plot area
-    fig, axs = plt.subplots(2, 3, **kwargs)
-    
-    # Plot cartopy features
-    for ax in axs.ravel():
-        ax.set_extent([-80, -10, 10, 80])
-        ax.add_feature(feature.LAND, color='lightgray', zorder=1)
-        ax.coastlines(zorder=1)
+    fig, axs = plt.subplots(2, 3, figsize=(12, 8), gridspec_kw={'hspace': 0.05, 'wspace': 0.05})
     
     # Add titles
     for col, title in zip(axs.T, meshes + [f'{meshes[0]}-{meshes[1]}']):
@@ -169,25 +149,25 @@ def plot_variable_spatial(plotvars, lon, lat, varname, units, scale=1, clims=Non
     
         # Loop through meshes
         for ax, mesh in zip(row, meshes):
+            
+            # Extract variables
+            names = ('lon', 'lat', 'sigma', varname)
+            lon, lat, sigma, variable = [ds[mesh][tstr][name] for name in names]
 
             # Plot variable
-            c1 = ax.contourf(
-                lon, lat, plotvars[mesh][tstr][varname] * scale,
-                levels=levels1, cmap=cmap, **plot_kwargs,
-            )
+            c1 = ax.contourf(lon, lat, variable * scale, levels=levels1, cmap=cmap)
 
             # Plot sigma contours
-            cs = ax.contour(
-                lon, lat, plotvars[mesh][tstr]['sigma'],
-                **sigma_levels, **plot_kwargs,
-            )
+            cs = ax.contour(lon, lat, sigma, **sigma_levels)
         
         # Plot residual
-        residual = np.subtract(*[plotvars[mesh][tstr][varname] for mesh in meshes])
-        c2 = row[2].contourf(
-            lon, lat, residual * scale,
-            levels=levels2, cmap='RdBu_r', **plot_kwargs,
-        )
+        residual = np.subtract(*[ds[mesh][tstr][varname] for mesh in meshes])
+        c2 = row[2].contourf(lon, lat, residual * scale, levels=levels2, cmap='RdBu_r')
+    
+    # Remove ticks
+    for ax in axs.ravel():
+        ax.xaxis.set_ticks([])
+        ax.yaxis.set_ticks([])
 
     # Add colorbars
     cax1 = fig.add_axes([0.13, 0.07, 0.5, 0.015])
