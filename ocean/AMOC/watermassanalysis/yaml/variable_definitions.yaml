@@ -8,7 +8,6 @@ heat:
 melt:
     - snowFlux               # Fresh water flux from snow ---------- [kg m-2 s-1]
     - iceRunoffFlux          # Fresh water flux from ice runoff ---- [kg m-2 s-1]
-    - seaIceFreshWaterFlux   # Fresh water flux from sea ice ------- [kg m-2 s-1]
 salt:
     - evaporationFlux        # Evaporation flux -------------------- [kg m-2 s-1]
     - rainFlux               # Fresh water flux from rain ---------- [kg m-2 s-1]
@@ -16,6 +15,6 @@ salt:
     - riverRunoffFlux        # Fresh water flux from river runoff -- [kg m-2 s-1]
     - iceRunoffFlux          # Fresh water flux from ice runoff ---- [kg m-2 s-1]
     - seaIceFreshWaterFlux   # Fresh water flux from sea ice ------- [kg m-2 s-1]
-    - seaIceSalinityFlux     # Sea ice salinity flux --------------- [kg salt m-2 s-1]
 other:
+    - seaIceSalinityFlux     # Sea ice salinity flux --------------- [kg salt m-2 s-1]
     - dThreshMLD             # Mixed layer depth density threshold - [m]
