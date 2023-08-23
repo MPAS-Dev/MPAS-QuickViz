@@ -80,7 +80,7 @@ def build_variables_spatial(ds_in, timeranges, bbox=None, months=None):
     """
     
     # Aggregate variable definitions
-    _, fluxdefs = wmt.load_variable_definitions()
+    _, fluxdefs = wmt.load_variable_definitions(vardefsfile='../../yaml/variable_definitions.yaml')
     aggregate_defs = {
         'radiative': ['shortWaveHeatFlux', 'longWaveHeatFluxUp', 'longWaveHeatFluxDown'],
         'precipitation': ['rainFlux', 'snowFlux'],
