@@ -3,5 +3,5 @@ results:
     1947-1957: /pscratch/sd/l/lvroekel/LR/run_001_062
     1997-2007: /pscratch/sd/l/lvroekel/LR/run_001_062
 meshfile: /global/cfs/cdirs/e3sm/inputdata/ocn/mpas-o/EC30to60E2r2/ocean.EC30to60E2r2.210210.nc
-maskfile: /pscratch/sd/b/bmoorema/maskfiles/EC30to60E2r2_NAmodewatermasks20230731.nc
-out: /pscratch/sd/b/bmoorema/results/wmtr
+maskfile: /pscratch/sd/b/bmoorema/maskfiles/EC30to60E2r2_NAmodewatermasks20230828.nc
+out: /pscratch/sd/b/bmoorema/results/aggregated

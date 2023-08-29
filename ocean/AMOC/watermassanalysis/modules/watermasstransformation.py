@@ -155,11 +155,7 @@ def calc_state_variables(S, T, P=0):
 
 def calc_buoyancy_fluxes(results, fluxdefs):
     """Calculate buoyancy fluxes according to fluxdefs
-    Also accounts for latent heat of fusion for melt fluxes.
     """
-    
-    # Latent heat of fusion [J kg-1]
-    L_fusion = -3.337e5
     
     # Init buoyancy flux dict
     bfluxes = {}
@@ -168,27 +164,11 @@ def calc_buoyancy_fluxes(results, fluxdefs):
     for name in fluxdefs['heat']:
         bfluxes[name] = results['heat_factor'] * results[name]
     
-    # Heat flux contributions due to melting/freezing
-    for name in fluxdefs['melt']:
-        name_appended = name.replace('Flux', 'HeatFlux')
-        bfluxes[name_appended] = results['heat_factor'] * results[name] * L_fusion
-    
     # Salt flux contributions
     for name in fluxdefs['salt']:
         bfluxes[name] = results['salt_factor'] * results[name]
     
     return bfluxes
-
-
-def calc_transformation(bflux, area, mask, binsize):
-    """Calculate water mass transformation per unit density
-    using area integral
-    """
-    
-    # Calculate transformation term F (in Sv)
-    F = np.sum(bflux[mask] * area[mask]) / binsize * 1e-6
-    
-    return F
 
 
 def write_output(mpasvars, wmtrvars, coords, paths):
@@ -274,29 +254,23 @@ def run_wmtr(pathsfile, sigmarange=[19, 29], binsize=0.05):
         # Calculate buoyancy fluxes
         bfluxes = calc_buoyancy_fluxes(results, fluxdefs)
 
-        # Loop through regions
-        for rmask in coords['regionMasks'].T:
+        # Loop through density bins
+        for sigmabin in coords['sigmaBins']:
 
-            # Apply region mask to flux variables
-            bf_r = {name: bfluxes[name][rmask] for name in bfluxes}
-            sigma_r, area_r = results['sigma'][rmask], coords['area'][rmask]
+            # Create density mask
+            dmask = (results['sigma'] >= sigmabin) & (results['sigma'] <= sigmabin + binsize)
 
-            # Loop through density bins
-            for sigmabin in coords['sigmaBins']:
+            # Loop through buoyancy flux contributions
+            for name, bflux in bfluxes.items():
 
-                # Create density mask
-                dmask = (sigma_r >= sigmabin) & (sigma_r <= sigmabin + binsize)
-                
-                # Loop through buoyancy flux contributions
-                for name in bf_r:
+                # Calculate transformation term F (area integral over dmask)
+                F = calc_transformation(bflux, coords['area'], dmask, binsize)
                     
-                    # Calculate transformation term F (area integral over dmask)
-                    F = calc_transformation(bf_r[name], area_r, dmask, binsize)
                     
                     # Append buoyancy flux contribution to list
-                    if name not in wmtrvars:
-                        wmtrvars[name] = []
-                    wmtrvars[name].append(F)
+                    #if name not in wmtrvars:
+                    #    wmtrvars[name] = []
+                    #wmtrvars[name].append(F)
 
     # Save output
     write_output(mpasvars, wmtrvars, coords, paths)
