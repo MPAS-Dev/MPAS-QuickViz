@@ -3,5 +3,5 @@ results:
     1947-1957: /global/cfs/cdirs/m4259/lvroekel/run_001_010
     1997-2007: /global/cfs/cdirs/m4259/lvroekel/run_051_060
 meshfile: /global/cfs/cdirs/e3sm/inputdata/ocn/mpas-o/oRRS18to6v3/oRRS18to6v3.171116.nc
-maskfile: /pscratch/sd/b/bmoorema/maskfiles/oRRS18to6v3_NAmodewatermasks20230731.nc
-out: /pscratch/sd/b/bmoorema/results/wmtr
+maskfile: /pscratch/sd/b/bmoorema/maskfiles/oRRS18to6v3_NAmodewatermasks20230828.nc
+out: /pscratch/sd/b/bmoorema/results/aggregated
