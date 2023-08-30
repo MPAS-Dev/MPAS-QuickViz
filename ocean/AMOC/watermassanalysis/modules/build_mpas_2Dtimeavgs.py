@@ -69,7 +69,7 @@ def parse_args(args, ds):
     path = os.path.join(os.path.split(path)[0], 'lonlat')
     prefix = prefix.split('.')[0]
     mesh = prefix.split('_')[-1]
-    ctgy = 'trans' if args.calctrans else 'vars'
+    ctgy = 'wmtf' if args.calctrans else 'vars'
     tstr = '_'.join(date.strftime('%Y%m%d') for date in timerange)
     outpath = os.path.join(path, f'{prefix}.mpas2Dtimeavg_{ctgy}_{tstr}.nc')
     
@@ -169,8 +169,9 @@ def calc_transformation(
     sigmabins = build_sigma_bins(sigmarange, binsize)
     sigmaindex = pd.Index(sigmabins, name='sigmaBins')
     
-    # Initialize transformation variable
-    datavars = {ctgy: [] for ctgy in ['heat', 'salt', 'total']}
+    # Initialize transformation storage lists
+    datalists = {ctgy: [] for ctgy in ['heat', 'salt', 'total']}
+    datavars = {}
 
     # Loop through sigmabins
     for sigmabin in sigmabins:
@@ -179,20 +180,24 @@ def calc_transformation(
         mask = mask_interval(ds_in.sigmaTheta, sigmabin, binsize)
 
         # Loop through flux categories
-        for ctgy in datavars:
+        for ctgy in datalists:
             
             # Mask sigma and average over time, then assign nan to zero
             name = 'buoyancy' + ctgy.capitalize() + 'Flux'
-            values = ds_in[name].where(mask).mean(dim='time') / binsize * 1e6 # 1e-12 Sv
+            values = ds_in[name].where(mask).mean(dim='time')
             values = values.where(~np.isnan(values), 0)
             
             # Populate full DataArray -> remap to lonlat -> append to list
             da_full.loc[cellindex] = values
             da_lonlat = remapper.remap(da_full).sel(**bbox)
-            datavars[ctgy].append(da_lonlat)
+            datalists[ctgy].append(da_lonlat)
 
-    # Concatenate DataArrays
-    datavars = {ctgy + 'Trans': xr.concat(datavars[ctgy], sigmaindex) for ctgy in datavars}
+    # Concatenate DataArrays and calculate final quantities
+    for ctgy in datalists:
+        transformation = xr.concat(datalists[ctgy], sigmaindex) / binsize * 1e6 # 1e-12 Sv
+        formation = -transformation.diff(dim='sigmaBins', label='lower')
+        transformation = transformation.isel(sigmaBins=slice(0, -1))
+        datavars.update({ctgy + 'Trans': transformation, ctgy + 'Form': formation})
     
     return datavars
 
@@ -219,7 +224,8 @@ def build_mpas_2D(args):
     # Initialize storage dict
     dataarrays = {name: [] for name in varnames}
     if args.calctrans:
-        dataarrays.update({name + 'Trans': [] for name in ['heat', 'salt', 'total']})
+        for ctgy in ['Trans', 'Form']:
+            dataarrays.update({name + ctgy: [] for name in ['heat', 'salt', 'total']})
     
     # Loop through months
     months = range(1, 13)
