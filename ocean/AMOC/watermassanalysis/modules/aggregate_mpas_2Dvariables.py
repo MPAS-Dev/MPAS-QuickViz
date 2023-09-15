@@ -28,11 +28,8 @@ def load_paths_varnames(pathsfile, varsfile='../yaml/variable_definitions.yaml')
     # Load variable definitions dict from yaml
     with open(varsfile, 'r') as f:
         vardefs = yaml.safe_load(f)
-    
-    # Flatten vardefs to get varnames list
-    varnames = [name for names in vardefs.values() for name in names]
 
-    return paths, varnames
+    return paths, vardefs
 
 
 def build_time_array(paths):
@@ -71,6 +68,18 @@ def build_MPASO_filename(date, dateranges, paths, startyear=1946):
     return filename
 
 
+def get_intdepth_vars(ds, deptharray, depths, subdomain):
+    """Depth integral variables for loading MPAS results 3D variables.
+    """
+    
+    # Define depth integration variables
+    kindex = [abs(deptharray - z).argmin() + 1 for z in depths]
+    thickness = ds.timeMonthly_avg_layerThickness[0, subdomain, :kmax].values
+    thicksums = [np.sum(thickness[:, :k], axis=1)[:, None] for k in kindex]
+    
+    return kindex, thickness, thicksums
+
+
 def load_MPASO_mesh(paths):
     """Load MPAS-Ocean mesh variables needed for calculating water mass
     transformation/formation. Use `'maxLevelCell` for landmask if needed.
@@ -78,16 +87,22 @@ def load_MPASO_mesh(paths):
 
     # Define subdomain from maskfile
     with xr.open_dataset(paths['maskfile']) as ds:
-        subdomain = ds.regionCellMasks.values[:, 0].astype(bool)
+        regionMasks = ds.regionCellMasks
+        subdomain = regionMasks.sum(dim='nRegions').values.astype(bool)
+        coords = {
+            'regionMasks': regionMasks.values[subdomain, :],
+            'regionNames': ds.regionNames.values,
+        }
 
     # Load mesh variables on subdomain
     with xr.open_dataset(paths['meshfile']) as ds:
-        coords = {
-            'nCells': ds['nCells'].values[subdomain],
-            'area': ds['areaCell'].values[subdomain],
-            'lon': np.rad2deg(ds['lonCell'].values[subdomain]),
-            'lat': np.rad2deg(ds['latCell'].values[subdomain]),
-        }
+        coords.update({
+            'nCells': ds.nCells.values[subdomain],
+            'area': ds.areaCell.values[subdomain],
+            'depth': ds.refBottomDepth.values[subdomain],
+            'lon': np.rad2deg(ds.lonCell.values[subdomain]),
+            'lat': np.rad2deg(ds.latCell.values[subdomain]),
+        })
 
     # Shift lon reference to -180, 180
     index = coords['lon'] > 180
@@ -96,20 +111,55 @@ def load_MPASO_mesh(paths):
     return coords, subdomain
 
 
-def load_MPASO_results(resultsfile, varnames, subdomain, prefix='timeMonthly_avg_'):
-    """Load MPAS-Ocean results variables needed for calculating water mass
-    transformation/formation. Use `'maxLevelCell` for landmask if needed.
+def load_MPASO_results(
+    resultsfile, vardefs, subdomain, deptharray=None,
+    depths=None, prefix='timeMonthly_avg_',
+):
+    """Load MPAS-Ocean results variables as defined by `vardefs`.
+    If `depths` is specified, 3D variables will be averaged from
+    the surface to those depths (`deptharray` must also be provided).
     """
-
+    
     # Open results file and extract variables
+    results = {}
     with xr.open_dataset(resultsfile) as ds:
         
-        # Load 2-D variables
-        results = {name: ds[prefix + name][0, :].values[subdomain] for name in varnames}
+        # Depth integration variables
+        if depths is not None:
+            kindex, thickness, thicksums = get_intdepth_vars(ds, deptharray, depths, subdomain)
         
-        # Load surface tracers
-        for name in ['salinity', 'temperature']:
-            results[name] = ds[prefix + 'activeTracers_' + name][0, :, 0].values[subdomain]
+        # Load 2-D variables
+        for names in vardefs['2D'].values():
+            for name in names:
+                results[name] = ds[prefix + name][0, :].values[subdomain]
+        
+        # Load 3-D variables
+        for ctgy, names in vardefs['3D'].items():
+            tag = ctgy + '_' if 'activeTracer' in ctgy else ''
+            for name in names:
+                
+                # Grab variable and subdomain slice
+                variable = ds[prefix + tag + name][0, subdomain, :]
+                
+                # Get the depth averages
+                if depths is not None:
+                    
+                    # Load max depth into memory and then grab the surface field
+                    variable = variable[:max(kindex)].values
+                    results[name] = [variable[:, 0]]
+                    
+                    # Loop through depth floors
+                    for k, thicksum in zip(kindex, thicksums):
+                        
+                        # Average value via depth integral and append to list
+                        results[name].append(variable[:, :k] * thickness[:, :k] / thicksum)
+                    
+                    # Concatenate depth averages
+                    results[name] = np.vstack(results[name])
+                
+                # Just load the surface field
+                else:
+                    results[name] = variable[:, 0].values
 
     return results
 
@@ -170,21 +220,21 @@ def aggregate_mpas_2D(pathsfile):
     """
 
     # Paths, varnames, mesh variables, time variables
-    paths, varnames = load_paths_varnames(pathsfile)
+    paths, vardefs = load_paths_varnames(pathsfile)
     coords, subdomain = load_MPASO_mesh(paths)
     coords['time'], dateranges = build_time_array(paths['results'])
 
     # Initialize storage dictionary
-    names = ['salinity', 'temperature', 'sigmaTheta', 'heatFactor', 'saltFactor']
-    variables = {name: [] for name in names}
-    variables.update({name: [] for name in varnames})
+    #names = ['salinity', 'temperature', 'sigmaTheta', 'heatFactor', 'saltFactor']
+    #variables = {name: [] for name in names}
+    #variables.update({name: [] for name in varnames})
 
     # Loop through filenames
     for date in tqdm(coords['time']):
         
         # Load results
         filename = build_MPASO_filename(date, dateranges, paths)
-        data = load_MPASO_results(filename, varnames, subdomain)
+        data = load_MPASO_results(filename, vardefs, subdomain)
         
         # Calculate state variables and append to results
         statevars = calc_state_variables(data['salinity'], data['temperature'])
