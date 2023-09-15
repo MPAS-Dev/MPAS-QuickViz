@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 """
-    Name: build_mpas_2Dtimeavgs.py
+    Name: build_mpas_wmtrtimeseries.py
     Author: Ben Moore-Maley (bmoorema@lanl.gov)
 
-    Executable module to build MPAS 2D time-averaged fields
+    Executable module to build MPAS water mass
+    transformation and formation timeseries
     for the ImPACTS Water Mass Analysis project.
 """
 
@@ -23,14 +24,12 @@ def define_args():
     
     # Optional arguments
     args = [
-        ('-v', '--varnames'   , 'Variable names to include [var1,var2,...] or none', None),
-        ('-t', '--timerange'  , 'Time range to average over [yyyymmdd,yyyymmdd]'   , None),
-        ('-b', '--boundingbox', 'Bounding box limits [lon0,lon1,lat0,lat1]'        , None),
-        ('-c', '--calctrans'  , 'Calculate 2D water mass transformation'           , 'store_true'),
+        ('-v', '--varnames' , 'Variable names to include [var1,var2,...] or none', None),
+        ('-t', '--timerange', 'Time range to average over [yyyymmdd,yyyymmdd]'   , None),
     ]
     
     # Construct args object
-    parser = ArgumentParser(description='Build MPAS 2D time-averaged fields')
+    parser = ArgumentParser(description='Build MPAS wmtr timeseries')
     parser.add_argument('filename', help='Path to input file')
     for arg in args:
         parser.add_argument(*arg[:2], help=arg[2], action=arg[3])
@@ -56,26 +55,18 @@ def parse_args(args, ds):
     else:
         timerange = [dateparse(date) for date in args.timerange.split(',')]
     
-    # --- Bounding box -------------------------
-    if args.boundingbox is None:
-        bbox = [-100, 20, 0, 80]
-    else:
-        bbox = [float(lim) for lim in args.boundingbox.split(',')]
-    bbox = {'lon': slice(*bbox[:2]), 'lat': slice(*bbox[2:])}
-    
     # --- Path strings -------------------------
     path, prefix = os.path.split(args.filename)
-    path = os.path.join(os.path.split(path)[0], 'lonlat')
+    path = os.path.join(os.path.split(path)[0], 'wmtr')
     prefix = prefix.split('.')[0]
     mesh = prefix.split('_')[-1]
-    ctgy = 'wmtf' if args.calctrans else 'vars'
     tstr = '_'.join(date.strftime('%Y%m%d') for date in timerange)
-    outpath = os.path.join(path, f'{prefix}.mpas2Dtimeavg_{ctgy}_{tstr}.nc')
+    outpath = os.path.join(path, f'{prefix}.mpastimeseries_wmtr_{tstr}.nc')
     
-    return varnames, timerange, bbox, mesh, outpath
+    return varnames, timerange, mesh, outpath
 
 
-def build_mpas_2D(args):
+def build_mpas_wmtr_timeseries(args):
     """Run the build 2D variable fields routine. Uses `pyremap` for
     remapping to lon lat.
     """
@@ -85,31 +76,22 @@ def build_mpas_2D(args):
     ds_in = xr.merge([ds_in, pptools.build_combined_variables(ds_in)])
     
     # Parse args
-    varnames, timerange, bbox, mesh, outpath = parse_args(args, ds_in)
-
-    # Build remapper objects
-    remapvars = pptools.build_remapper(mesh)
-
-    # Slice timerange
-    ds_in = ds_in.sel(time=slice(*timerange))
+    varnames, timerange, mesh, outpath = parse_args(args, ds_in)
     
     # Initialize storage dict
     dataarrays = {name: [] for name in varnames}
-    if args.calctrans:
-        for ctgy in ['Trans', 'Form']:
-            dataarrays.update({name + ctgy: [] for name in ['heat', 'salt', 'total']})
+    for ctgy in ['Trans', 'Form']:
+        dataarrays.update({name + ctgy: [] for name in ['heat', 'salt', 'total']})
     
-    # Loop through months
-    months = range(1, 13)
-    for month in tqdm(months):
+    # Loop through time
+    for date in tqdm(ds_in.time):
         
-        # Isolate month
-        ds = ds_in.sel(time=ds_in.time.dt.month == month)
+        # Isolate time
+        ds = ds_in.sel(time=date)
 
         # Load variables on subdomain into full domain and remap to lonlat
         for name in varnames:
-            da = ds[name].mean(dim='time')
-            da = pptools.remap(da, **remapvars, bbox=bbox)
+            da = ds[name]
             dataarrays[name].append(da)
 
         # Calculate spatial water mass transformation
