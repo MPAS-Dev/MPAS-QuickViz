@@ -1,24 +1,33 @@
-radiativeHeatFlux:
-    - shortWaveHeatFlux      # Short wave radiation flux ----------- [W m-2]
-    - longWaveHeatFluxUp     # Upward long wave heat flux ---------- [W m-2]
-    - longWaveHeatFluxDown   # Downward long wave heat flux -------- [W m-2]
-precipitationFlux:
-    - rainFlux               # Fresh water flux from rain ---------- [kg m-2 s-1]
-    - snowFlux               # Fresh water flux from snow ---------- [kg m-2 s-1]
-runoffFlux:
-    - riverRunoffFlux        # Fresh water flux from river runoff -- [kg m-2 s-1]
-    - iceRunoffFlux          # Fresh water flux from ice runoff ---- [kg m-2 s-1]
-totalHeatFlux:
-    - shortWaveHeatFlux      # Short wave radiation flux ----------- [W m-2]
-    - longWaveHeatFluxUp     # Upward long wave heat flux ---------- [W m-2]
-    - longWaveHeatFluxDown   # Downward long wave heat flux -------- [W m-2]
-    - latentHeatFlux         # Latent heat flux -------------------- [W m-2]
-    - sensibleHeatFlux       # Sensible heat flux ------------------ [W m-2]
-    - seaIceHeatFlux         # Sea ice heat flux ------------------- [W m-2]
-totalSaltFlux:
-    - evaporationFlux        # Evaporation flux -------------------- [kg m-2 s-1]
-    - rainFlux               # Fresh water flux from rain ---------- [kg m-2 s-1]
-    - snowFlux               # Fresh water flux from snow ---------- [kg m-2 s-1]
-    - riverRunoffFlux        # Fresh water flux from river runoff -- [kg m-2 s-1]
-    - iceRunoffFlux          # Fresh water flux from ice runoff ---- [kg m-2 s-1]
-    - seaIceFreshWaterFlux   # Fresh water flux from sea ice ------- [kg m-2 s-1]
+2D:
+    Fluxes:
+        - shortWaveHeatFlux                      # Short wave radiation flux ----------------- [W m-2]
+        - longWaveHeatFluxUp                     # Upward long wave heat flux ---------------- [W m-2]
+        - longWaveHeatFluxDown                   # Downward long wave heat flux -------------- [W m-2]
+        - latentHeatFlux                         # Latent heat flux -------------------------- [W m-2]
+        - sensibleHeatFlux                       # Sensible heat flux ------------------------ [W m-2]
+        - seaIceHeatFlux                         # Sea ice heat flux ------------------------- [W m-2]
+        - evaporationFlux                        # Evaporation flux -------------------------- [kg m-2 s-1]
+        - rainFlux                               # Fresh water flux from rain ---------------- [kg m-2 s-1]
+        - snowFlux                               # Fresh water flux from snow ---------------- [kg m-2 s-1]
+        - riverRunoffFlux                        # Fresh water flux from river runoff -------- [kg m-2 s-1]
+        - iceRunoffFlux                          # Fresh water flux from ice runoff ---------- [kg m-2 s-1]
+        - seaIceFreshWaterFlux                   # Fresh water flux from sea ice ------------- [kg m-2 s-1]
+        - seaIceSalinityFlux                     # Sea ice salinity flux --------------------- [kg salt m-2 s-1]
+    Bulk:
+        - dThreshMLD                             # Mixed layer depth density threshold ------- [m]
+        - oceanHeatContentSfcTo700m              # Integrated heat content, surface to 700m -- [J]
+3D:
+    State:
+        - potentialDensity                       # Potential density [kg m-3]
+    Velocities:
+        - velocityZonal                          # Eastward horizontal velocity component ---- [m s-1]
+        - velocityMeridional                     # Northward horizontal velocity component --- [m s-1]
+    GM:
+        - GMBolusVelocityZonal                   # Zonal GM bolus velocity ------------------- [m s-1]
+        - GMBolusVelocityMeridional              # Meridional GM bolus velocity -------------- [m s-1]
+    activeTracers:
+        - temperature                            # Potential temperature --------------------- [deg C]
+        - salinity                               # Salinity ---------------------------------- [PSU]
+    activeTracerHorizontalAdvectionTendency:
+        - temperatureHorizontalAdvectionTendency # Temperature horizontal advection tendency - [dec C s-1]
+        - salinityHorizontalAdvectionTendency    # Salinity horizontal advection tendency ---- [PSU s-1]
