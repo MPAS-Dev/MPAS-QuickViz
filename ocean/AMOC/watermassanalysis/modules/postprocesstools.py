@@ -10,8 +10,21 @@
 import numpy as np
 import xarray as xr
 import pandas as pd
+import sys
 import yaml
 import pyremap
+
+
+def loopstatus(k, n, interval=10):
+    """Print loop progress at percentage intervals given an iteration k
+    and a total number of iterations n
+    """
+    
+    nscale = 100 / n
+    percent = k * nscale
+    if percent % interval < nscale:
+        print(f'{int(percent)}% complete ...')
+        sys.stdout.flush()
 
 
 def build_combined_variables(ds_in, varsfile='../yaml/variable_definitions.yaml'):

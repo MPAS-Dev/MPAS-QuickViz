@@ -15,9 +15,10 @@ import yaml
 from datetime import datetime
 from fastjmd95 import rho, drhodt, drhods
 from tqdm import tqdm
+import postprocesstools as pptools
 
 
-def load_paths_varnames(pathsfile, varsfile='../yaml/variable_definitions.yaml'):
+def load_paths_vardefs(pathsfile, varsfile='../yaml/variable_definitions.yaml'):
     """Load paths and variable definitions for MPAS-Ocean 2D aggregation
     """
     
@@ -68,16 +69,19 @@ def build_MPASO_filename(date, dateranges, paths, startyear=1946):
     return filename
 
 
-def get_intdepth_vars(ds, deptharray, depths, subdomain):
-    """Depth integral variables for loading MPAS results 3D variables.
+def get_depthint_params(ds, coords, subdomain):
+    """Depth integral parameters for loading MPAS results 3D variables.
+    Return indices and thickness referenced to `coords['depths']`.
+    `coords['depths']` must start at zero, which is disregarded in the
+    returned parameters.
     """
     
     # Define depth integration variables
-    kindex = [abs(deptharray - z).argmin() + 1 for z in depths]
-    thickness = ds.timeMonthly_avg_layerThickness[0, subdomain, :kmax].values
-    thicksums = [np.sum(thickness[:, :k], axis=1)[:, None] for k in kindex]
+    kindex = [abs(coords['depth'] - z).argmin() + 1 for z in coords['depths'][1:]]
+    thickness = ds.timeMonthly_avg_layerThickness[0, :, :max(kindex)].values[subdomain, :]
+    thicktotals = [np.sum(thickness[:, :k], axis=1) for k in kindex]
     
-    return kindex, thickness, thicksums
+    return kindex, thickness, thicktotals
 
 
 def load_MPASO_mesh(paths):
@@ -88,7 +92,7 @@ def load_MPASO_mesh(paths):
     # Define subdomain from maskfile
     with xr.open_dataset(paths['maskfile']) as ds:
         regionMasks = ds.regionCellMasks
-        subdomain = regionMasks.sum(dim='nRegions').values.astype(bool)
+        subdomain = regionMasks.sum(dim='nRegions', dtype=bool).values
         coords = {
             'regionMasks': regionMasks.values[subdomain, :],
             'regionNames': ds.regionNames.values,
@@ -97,9 +101,9 @@ def load_MPASO_mesh(paths):
     # Load mesh variables on subdomain
     with xr.open_dataset(paths['meshfile']) as ds:
         coords.update({
+            'depth': ds.refBottomDepth.values,
             'nCells': ds.nCells.values[subdomain],
             'area': ds.areaCell.values[subdomain],
-            'depth': ds.refBottomDepth.values[subdomain],
             'lon': np.rad2deg(ds.lonCell.values[subdomain]),
             'lat': np.rad2deg(ds.latCell.values[subdomain]),
         })
@@ -112,59 +116,65 @@ def load_MPASO_mesh(paths):
 
 
 def load_MPASO_results(
-    resultsfile, vardefs, subdomain, deptharray=None,
-    depths=None, prefix='timeMonthly_avg_',
+    resultsfile, vardefs, subdomain, coords=None, prefix='timeMonthly_avg_',
 ):
     """Load MPAS-Ocean results variables as defined by `vardefs`.
-    If `depths` is specified, 3D variables will be averaged from
-    the surface to those depths (`deptharray` must also be provided).
+    If `coords` is specified, 3D variables will be averaged from
+    the surface to the depths specified by `coords['depths']`.
     """
     
     # Open results file and extract variables
     results = {}
     with xr.open_dataset(resultsfile) as ds:
         
-        # Depth integration variables
-        if depths is not None:
-            kindex, thickness, thicksums = get_intdepth_vars(ds, deptharray, depths, subdomain)
+        # Depth integration parameters
+        if coords is not None:
+            kindex, thickness, thicktotals = get_depthint_params(ds, coords, subdomain)
         
         # Load 2-D variables
         for names in vardefs['2D'].values():
             for name in names:
-                results[name] = ds[prefix + name][0, :].values[subdomain]
+                varname = prefix + name
+                results[name] = ds[varname][0, :].values[subdomain]
         
         # Load 3-D variables
         for ctgy, names in vardefs['3D'].items():
             tag = ctgy + '_' if 'activeTracer' in ctgy else ''
             for name in names:
+                varname = prefix + tag + name
                 
-                # Grab variable and subdomain slice
-                variable = ds[prefix + tag + name][0, subdomain, :]
+                # Skip if no GM variables present
+                if varname not in ds:
+                    continue
                 
-                # Get the depth averages
-                if depths is not None:
-                    
-                    # Load max depth into memory and then grab the surface field
-                    variable = variable[:max(kindex)].values
-                    results[name] = [variable[:, 0]]
-                    
-                    # Loop through depth floors
-                    for k, thicksum in zip(kindex, thicksums):
-                        
-                        # Average value via depth integral and append to list
-                        results[name].append(variable[:, :k] * thickness[:, :k] / thicksum)
-                    
-                    # Concatenate depth averages
-                    results[name] = np.vstack(results[name])
-                
-                # Just load the surface field
+                # Process variable
                 else:
-                    results[name] = variable[:, 0].values
+
+                    # Get the depth averages
+                    if coords is not None:
+
+                        # Load max depth into memory and then grab the surface field
+                        variable = ds[varname][0, :, :max(kindex)].values[subdomain, :]
+                        results[name] = [variable[:, 0]]
+
+                        # Loop through depth floors
+                        for k, thicktotal in zip(kindex, thicktotals):
+
+                            # Average value via depth integral and append to list
+                            varmean = np.sum(variable[:, :k] * thickness[:, :k], axis=1) / thicktotal
+                            results[name].append(varmean)
+
+                        # Concatenate depth averages (add zero dim for later concatenation)
+                        results[name] = np.vstack(results[name]).T[None, ...]
+
+                    # Just load the surface field
+                    else:
+                        results[name] = ds[varname][0, :, 0].values[subdomain]
 
     return results
 
 
-def calc_state_variables(S, T, P=0):
+def calc_state_variables(results, P=0):
     """State Equation from Jackett and McDougal 1995
     Use package fastjmd95 by R. Abernathey and J. Busecke
 
@@ -174,15 +184,19 @@ def calc_state_variables(S, T, P=0):
     # Define constants
     rho0 = 1026.0     # Seawater density constant [kg m-3]
     cpsw = 3.996e3    # Heat capacity of seawater [J kg-1 K-1]
+    
+    # Define surface salinity and temperature
+    S, T = results['salinity'], results['temperature']
+    S, T = [var[:, 0] if var.ndim == 2 else var for var in (S, T)]
 
     # Calculate state variables
-    statevars = {
+    results.update({
         'sigmaTheta': rho(S, T, P) - 1000,
         'heatFactor': drhodt(S, T, P) / rho0 / cpsw,
         'saltFactor': -drhods(S, T, P) / rho0 * S,
-    }
+    })
 
-    return statevars
+    return results
 
 
 def write_output(variables, coords, paths):
@@ -197,17 +211,31 @@ def write_output(variables, coords, paths):
     
     # Build xarray dataset coordinate arrays
     coordinates = {
-        'time'  : ('time'  , coords['time']),
-        'nCells': ('nCells', coords['nCells']),
+        'time'       : ('time'       , coords['time']),
+        'nCells'     : ('nCells'     , coords['nCells']),
+        'regionNames': ('regionNames', coords['regionNames']),
     }
     datavars = {
-        'lon'   : ('nCells', coords['lon']),
-        'lat'   : ('nCells', coords['lat']),
-        'area'  : ('nCells', coords['area']),
+        'lon'        : ( 'nCells', coords['lon']),
+        'lat'        : ( 'nCells', coords['lat']),
+        'area'       : ( 'nCells', coords['area']),
+        'regionMasks': (['nCells', 'regionNames'], coords['regionMasks']),
     }
-    datavars.update(
-        {name: (['time', 'nCells'], np.vstack(variables[name])) for name in variables}
-    )
+
+    # Build xarray dataset variable arrays
+    dims = ['time', 'nCells']
+    for name in variables:
+        variable = np.vstack(variables[name])
+        
+        # Dims for 3D vars with depth averages
+        if variable.ndim == 3:
+            datavars[name] = (dims + ['depths'], variable)
+            if 'depths' not in coordinates:
+                coordinates['depths'] = ('depths', coords['depths'])
+        
+        # Surface slices only
+        else:
+            datavars[name] = (dims, variable)
     
     # Populate xarray dataset and save to netCDF
     filename = os.path.join(paths['out'], f'{prefix}_{mesh}.mpas2Daggregated_{datestr}.nc')
@@ -220,29 +248,28 @@ def aggregate_mpas_2D(pathsfile):
     """
 
     # Paths, varnames, mesh variables, time variables
-    paths, vardefs = load_paths_varnames(pathsfile)
+    paths, vardefs = load_paths_vardefs(pathsfile)
     coords, subdomain = load_MPASO_mesh(paths)
     coords['time'], dateranges = build_time_array(paths['results'])
-
-    # Initialize storage dictionary
-    #names = ['salinity', 'temperature', 'sigmaTheta', 'heatFactor', 'saltFactor']
-    #variables = {name: [] for name in names}
-    #variables.update({name: [] for name in varnames})
+    coords['depths'] = [0, 100, 500] # Averging depths (0 required)
 
     # Loop through filenames
-    for date in tqdm(coords['time']):
+    variables, ntime = {}, len(coords['time'])
+    for t, date in enumerate(coords['time']):
         
-        # Load results
+        # Load results and calculate state variables
         filename = build_MPASO_filename(date, dateranges, paths)
-        data = load_MPASO_results(filename, vardefs, subdomain)
-        
-        # Calculate state variables and append to results
-        statevars = calc_state_variables(data['salinity'], data['temperature'])
-        data.update(statevars)
+        results = load_MPASO_results(filename, vardefs, subdomain, coords=coords)
+        results = calc_state_variables(results)
         
         # Append results to list
-        for name in data:
-            variables[name].append(data[name])
+        for name in results:
+            if name not in variables:
+                variables[name] = []
+            variables[name].append(results[name])
+        
+        # Print status
+        pptools.loopstatus(t, ntime)
     
     # Save output
     write_output(variables, coords, paths)
