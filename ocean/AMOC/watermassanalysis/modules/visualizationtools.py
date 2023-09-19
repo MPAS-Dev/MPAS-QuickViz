@@ -13,7 +13,7 @@ from datetime import datetime
 from tqdm import tqdm
 
 
-def parse_plot_args(ds, months, sigmabins, clims):
+def parse_plot_args(ds, depths, months, sigmabins, clims):
     """Parse arguments in the call to `plot_2Dvariable` into the
     needed variable types and assign defaults.
     """
@@ -28,6 +28,7 @@ def parse_plot_args(ds, months, sigmabins, clims):
     # Parse months and sigmabins into slice args
     # name: (aggregation_function, values)
     sliceargs = {
+        'depths'   : ('', 0 if depths is None else depths),
         'months'   : ('mean', slice(*range_def) if months is None else months),
         'sigmaBins': ('sum' , slice(*range_def) if sigmabins is None else sigmabins),
     }
@@ -79,7 +80,7 @@ def plot_2Dpanel(
 
 def plot_2Dvariable(
     frame, fig, ds_in, varname, units, scale=1, animdim=None,
-    months=None, sigmabins=None, clims=None, cmap=None,
+    depths=None, months=None, sigmabins=None, clims=None, cmap=None,
 ):
     """Plot specified variable over spatial region. Hard-coded for two timeranges,
     two meshes and the residual between meshes. These categories must be consistent
@@ -90,7 +91,7 @@ def plot_2Dvariable(
     """
     
     # Parse plot arguments
-    meshes, tstrs, sliceargs, clims = parse_plot_args(ds_in, months, sigmabins, clims)
+    meshes, tstrs, sliceargs, clims = parse_plot_args(ds_in, depths, months, sigmabins, clims)
     
     # Animation frame labels
     if animdim == 'months':

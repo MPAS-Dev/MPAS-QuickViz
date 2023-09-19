@@ -10,12 +10,13 @@
 import numpy as np
 import xarray as xr
 import pandas as pd
-import sys
+import os
+import time
 import yaml
 import pyremap
 
 
-def loopstatus(k, n, interval=10):
+def loopstatus(k, n, starttime, interval=1):
     """Print loop progress at percentage intervals given an iteration k
     and a total number of iterations n
     """
@@ -23,32 +24,35 @@ def loopstatus(k, n, interval=10):
     nscale = 100 / n
     percent = k * nscale
     if percent % interval < nscale:
-        print(f'{int(percent)}% complete ...')
-        sys.stdout.flush()
+        time_elapsed = time.time() - starttime
+        msg = f'{int(percent)}% complete ... {time_elapsed:.0f} seconds elapsed'
+        print(msg, flush=True)
 
 
-def build_combined_variables(ds_in, varsfile='../yaml/variable_definitions.yaml'):
+def build_savepath_from_file(filein, desc, timerange=None, outdir=''):
+    """Returns a `savepath` given a `filein`, `desc`, `timerange` and `outdir`.
     """
-    """
     
-    # Open variable definitions
-    with open(varsfile, 'r') as f:
-        ctgys = yaml.safe_load(f)
+    # Parse filename
+    path, prefix = os.path.split(filein)
+    path = os.path.join(os.path.split(path)[0], outdir)
+    prefix, tstr = prefix.split('.')[:2]
+    mesh = prefix.split('_')[-1]
     
-    # Combine variables
-    combined = {ctgy: sum([ds_in[name] for name in ctgys[ctgy]]) for ctgy in ctgys}
-    combined['buoyancyHeatFlux'] = ds_in['heatFactor'] * combined['totalHeatFlux']
-    combined['buoyancySaltFlux'] = ds_in['saltFactor'] * combined['totalSaltFlux']
-    combined['buoyancyTotalFlux'] = combined['buoyancyHeatFlux'] + combined['buoyancySaltFlux']
+    # Parse tstr from timerange or filein
+    if timerange is not None:
+        tstr = '_'.join(date.strftime('%Y%m%d') for date in timerange)
+    else:
+        tstr = '_'.join(tstr.split('_')[-2:])
     
-    # Output combined variables as xarray dataset
-    ds_out = xr.Dataset(combined)
+    # Build savepath
+    savepath = os.path.join(path, f'{prefix}.{desc}_{tstr}.nc')
     
-    return ds_out
+    return savepath, mesh
 
 
 def build_remapper(
-    mesh,
+    mesh, bbox=None,
     mesh_path='/global/cfs/cdirs/e3sm/inputdata/ocn/mpas-o/',
     mapping_path='/global/cfs/cdirs/m4259/mapping_files/',
 ):
@@ -78,6 +82,7 @@ def build_remapper(
     remapvars = {
         'da_full': xr.DataArray(nan, dims='nCells'),
         'remapper': pyremap.Remapper(meshdescriptor, lonlatdescriptor, mappingfile),
+        'bbox': bbox,
     }
     
     return remapvars
@@ -106,6 +111,27 @@ def build_sigma_bins(sigmarange, binsize):
     sigmabins = pd.Index(sigmabins, name='sigmaBins')
     
     return sigmabins
+
+
+def build_combined_variables(ds_in, vardefs='../yaml/variable_combinations.yaml'):
+    """Build combined variables based on the combined definitions in the
+    `vardefs` yaml file. Also build the buoyancy fluxes explicitly.
+    """
+    
+    # Open variable definitions
+    with open(vardefs, 'r') as f:
+        ctgys = yaml.safe_load(f)
+    
+    # Combine variables
+    combined = {ctgy: sum([ds_in[name] for name in ctgys[ctgy]]) for ctgy in ctgys}
+    combined['buoyancyHeatFlux'] = ds_in['heatFactor'] * combined['totalHeatFlux']
+    combined['buoyancySaltFlux'] = ds_in['saltFactor'] * combined['totalSaltFlux']
+    combined['buoyancyTotalFlux'] = combined['buoyancyHeatFlux'] + combined['buoyancySaltFlux']
+    
+    # Output combined variables as xarray dataset
+    ds_out = xr.Dataset(combined)
+    
+    return ds_out
 
 
 def calc_wmt(ds_in, remapvars=None, sigmarange=[21, 29], binsize=0.1):
@@ -143,15 +169,15 @@ def calc_wmt(ds_in, remapvars=None, sigmarange=[21, 29], binsize=0.1):
             else:  # 2D output
                 
                 # Time average -> replace nan with zero -> remap to lonlat
-                da = da.mean(dim='time').where(~np.isnan(da_in), 0)
-                da = remap(da, **remapvars, bbox=bbox)
+                da = da.mean(dim='time')
+                da = remap(da.where(~np.isnan(da), 0), **remapvars)
             
             # Append to list
             data[ctgy].append(da)
 
     # Concatenate DataArrays and calculate final quantities
     variables = {}
-    for ctgy in datalists:
+    for ctgy in data:
         transformation = xr.concat(data[ctgy], sigmabins) / binsize * scale
         variables[ctgy + 'Trans'] = transformation.isel(sigmaBins=slice(0, -1))
         variables[ctgy + 'Form'] = -transformation.diff(dim='sigmaBins', label='lower')
