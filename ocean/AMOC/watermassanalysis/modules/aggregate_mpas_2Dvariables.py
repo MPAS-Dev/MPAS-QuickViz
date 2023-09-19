@@ -146,30 +146,27 @@ def load_MPASO_results(
                 # Skip if no GM variables present
                 if varname not in ds:
                     continue
-                
-                # Process variable
+
+                # Get the depth averages
+                if coords is not None:
+
+                    # Load max depth into memory and then grab the surface field
+                    variable = ds[varname][0, :, :max(kindex)].values[subdomain, :]
+                    results[name] = [variable[:, 0]]
+
+                    # Loop through depth floors
+                    for k, thicktotal in zip(kindex, thicktotals):
+
+                        # Average value via depth integral and append to list
+                        varmean = np.sum(variable[:, :k] * thickness[:, :k], axis=1) / thicktotal
+                        results[name].append(varmean)
+
+                    # Concatenate depth averages (add zero dim for later concatenation)
+                    results[name] = np.vstack(results[name]).T[None, ...]
+
+                # Just load the surface field
                 else:
-
-                    # Get the depth averages
-                    if coords is not None:
-
-                        # Load max depth into memory and then grab the surface field
-                        variable = ds[varname][0, :, :max(kindex)].values[subdomain, :]
-                        results[name] = [variable[:, 0]]
-
-                        # Loop through depth floors
-                        for k, thicktotal in zip(kindex, thicktotals):
-
-                            # Average value via depth integral and append to list
-                            varmean = np.sum(variable[:, :k] * thickness[:, :k], axis=1) / thicktotal
-                            results[name].append(varmean)
-
-                        # Concatenate depth averages (add zero dim for later concatenation)
-                        results[name] = np.vstack(results[name]).T[None, ...]
-
-                    # Just load the surface field
-                    else:
-                        results[name] = ds[varname][0, :, 0].values[subdomain]
+                    results[name] = ds[varname][0, :, 0].values[subdomain]
 
     return results
 
@@ -187,7 +184,7 @@ def calc_state_variables(results, P=0):
     
     # Define surface salinity and temperature
     S, T = results['salinity'], results['temperature']
-    S, T = [var[:, 0] if var.ndim == 2 else var for var in (S, T)]
+    S, T = [var[0, :, 0] if var.ndim == 3 else var for var in (S, T)]
 
     # Calculate state variables
     results.update({
@@ -254,8 +251,8 @@ def aggregate_mpas_2D(pathsfile):
     coords['depths'] = [0, 100, 500] # Averging depths (0 required)
 
     # Loop through filenames
-    variables, ntime = {}, len(coords['time'])
-    for t, date in enumerate(coords['time']):
+    variables = {}
+    for date in tqdm(coords['time']):
         
         # Load results and calculate state variables
         filename = build_MPASO_filename(date, dateranges, paths)
@@ -267,9 +264,6 @@ def aggregate_mpas_2D(pathsfile):
             if name not in variables:
                 variables[name] = []
             variables[name].append(results[name])
-        
-        # Print status
-        pptools.loopstatus(t, ntime)
     
     # Save output
     write_output(variables, coords, paths)

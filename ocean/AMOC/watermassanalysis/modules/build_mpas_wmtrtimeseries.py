@@ -3,8 +3,7 @@
     Name: build_mpas_wmtrtimeseries.py
     Author: Ben Moore-Maley (bmoorema@lanl.gov)
 
-    Executable module to build MPAS water mass
-    transformation and formation timeseries
+    Executable module to build MPAS WMTR time series
     for the ImPACTS Water Mass Analysis project.
 """
 
@@ -24,12 +23,13 @@ def define_args():
     
     # Optional arguments
     args = [
-        ('-v', '--varnames' , 'Variable names to include [var1,var2,...] or none', None),
-        ('-t', '--timerange', 'Time range to average over [yyyymmdd,yyyymmdd]'   , None),
+        ('-v', '--varnames'   , 'Variable names to include [var1,var2,...] or none', None),
+        ('-r', '--regions'    , 'Regions to include [region1,region2,...]'         , None),
+        ('-c', '--calctrans'  , 'Calculate 2D water mass transformation'           , 'store_true'),
     ]
     
     # Construct args object
-    parser = ArgumentParser(description='Build MPAS wmtr timeseries')
+    parser = ArgumentParser(description='Build MPAS WMTR timeseries')
     parser.add_argument('filename', help='Path to input file')
     for arg in args:
         parser.add_argument(*arg[:2], help=arg[2], action=arg[3])
@@ -43,32 +43,31 @@ def parse_args(args, ds):
     
     # --- Variable names -----------------------
     if args.varnames is None:
-        varnames = [name for name in ds if ds[name].dims == ('time', 'nCells')]
+        dims = ['time', 'nCells']
+        varnames = [name for name in ds if all(dim in ds[name].dims for dim in dims)]
     else:
         varnames = args.varnames.split(',')
         if varnames[0].lower() == 'none':
             varnames = []
     
-    # --- Time range ---------------------------
-    if args.timerange is None:
-        timerange = list(ds.time[[0, -1]].dt.date.values)
+    # --- Regions ------------------------------
+    if args.regions is None:
+        regions = list(ds.regionNames.values.astype(str))
     else:
-        timerange = [dateparse(date) for date in args.timerange.split(',')]
+        regions = args.varnames.split(',')
     
     # --- Path strings -------------------------
-    path, prefix = os.path.split(args.filename)
-    path = os.path.join(os.path.split(path)[0], 'wmtr')
-    prefix = prefix.split('.')[0]
-    mesh = prefix.split('_')[-1]
-    tstr = '_'.join(date.strftime('%Y%m%d') for date in timerange)
-    outpath = os.path.join(path, f'{prefix}.mpastimeseries_wmtr_{tstr}.nc')
+    ctgy = 'wmt' if args.calctrans else 'vars'
+    desc = 'mpastimeseries_' + ctgy
+    savepath, mesh = pptools.build_savepath_from_file(
+        args.filename, desc, outdir='timeseries',
+    )
     
-    return varnames, timerange, mesh, outpath
+    return varnames, regions, mesh, savepath
 
 
-def build_mpas_wmtr_timeseries(args):
-    """Run the build 2D variable fields routine. Uses `pyremap` for
-    remapping to lon lat.
+def build_mpas_timeseries(args):
+    """Run the build MPAS time series routine.
     """
     
     # Load aggregated dataset and build combined variables
@@ -76,35 +75,40 @@ def build_mpas_wmtr_timeseries(args):
     ds_in = xr.merge([ds_in, pptools.build_combined_variables(ds_in)])
     
     # Parse args
-    varnames, timerange, mesh, outpath = parse_args(args, ds_in)
+    varnames, regions, mesh, savepath = parse_args(args, ds_in)
     
     # Initialize storage dict
     dataarrays = {name: [] for name in varnames}
-    for ctgy in ['Trans', 'Form']:
-        dataarrays.update({name + ctgy: [] for name in ['heat', 'salt', 'total']})
+    if args.calctrans:
+        ctgys, names = ['Trans', 'Form'], ['heat', 'salt', 'total']
+        wmtnames = [name + ctgy for ctgy in ctgys for name in names]
+        dataarrays.update({name: [] for name in wmtnames})
     
-    # Loop through time
-    for date in tqdm(ds_in.time):
+    # Loop through regions
+    for region in tqdm(regions, desc='Loading variables by region'):
         
-        # Isolate time
-        ds = ds_in.sel(time=date)
+        # Mask area
+        regionMask = ds_in.regionMasks.sel(regionNames=bytes(region, 'utf-8'))
+        area_region = ds_in.area.where(regionMask)
 
-        # Load variables on subdomain into full domain and remap to lonlat
+        # Loop through variables
         for name in varnames:
-            da = ds[name]
-            dataarrays[name].append(da)
-
-        # Calculate spatial water mass transformation
-        if args.calctrans:
-            wmtvars = pptools.calc_wmt(ds, remapvars=remapvars, bbox)
+            
+            # Compute region average via area integral
+            da = (ds_in[name] * area_region).sum(dim='nCells') / area_region.sum()
+            dataarrays[name].append(da)    
+    
+    # Calculate water mass transformation/formation
+    if args.calctrans:
+        for date in tqdm(ds_in.time, desc='Loading wmt variables'):
+            wmtvars = pptools.calc_wmt(ds_in.sel(time=date))
             for name in wmtvars:
                 dataarrays[name].append(wmtvars[name])
     
-    # Concatenate months and save to netCDF
-    monthsindex = pd.Index(months, name='months')
-    dataarrays = {name: xr.concat(dataarrays[name], monthsindex) for name in dataarrays}
-    xr.Dataset(dataarrays).to_netcdf(outpath)
-
+    # Concatenate along region (variables) and time (wmtr vars)
+    variables = {name: xr.concat(dataarrays[name], 'regionNames') for name in varnames}
+    variables.update({name: xr.concat(dataarrays[name], 'time') for name in wmtnames})
+    xr.Dataset(variables).to_netcdf(savepath)
 
 if __name__ == "__main__":
-    build_mpas_2D(define_args())
+    build_mpas_timeseries(define_args())

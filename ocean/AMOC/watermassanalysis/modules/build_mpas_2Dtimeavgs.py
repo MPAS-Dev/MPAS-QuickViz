@@ -44,7 +44,8 @@ def parse_args(args, ds):
     
     # --- Variable names -----------------------
     if args.varnames is None:
-        varnames = [name for name in ds if ds[name].dims == ('time', 'nCells')]
+        dims = ['time', 'nCells']
+        varnames = [name for name in ds if all(dim in ds[name].dims for dim in dims)]
     else:
         varnames = args.varnames.split(',')
         if varnames[0].lower() == 'none':
@@ -64,15 +65,13 @@ def parse_args(args, ds):
     bbox = {'lon': slice(*bbox[:2]), 'lat': slice(*bbox[2:])}
     
     # --- Path strings -------------------------
-    path, prefix = os.path.split(args.filename)
-    path = os.path.join(os.path.split(path)[0], 'lonlat')
-    prefix = prefix.split('.')[0]
-    mesh = prefix.split('_')[-1]
-    ctgy = 'wmtf' if args.calctrans else 'vars'
-    tstr = '_'.join(date.strftime('%Y%m%d') for date in timerange)
-    outpath = os.path.join(path, f'{prefix}.mpas2Dtimeavg_{ctgy}_{tstr}.nc')
+    ctgy = 'wmt' if args.calctrans else 'vars'
+    desc = 'mpas2Dtimeavg_' + ctgy
+    savepath, mesh = pptools.build_savepath_from_file(
+        args.filename, desc, timerange=timerange, outdir='lonlat',
+    )
     
-    return varnames, timerange, bbox, mesh, outpath
+    return varnames, timerange, bbox, mesh, savepath
 
 
 def build_mpas_2D(args):
@@ -85,10 +84,10 @@ def build_mpas_2D(args):
     ds_in = xr.merge([ds_in, pptools.build_combined_variables(ds_in)])
     
     # Parse args
-    varnames, timerange, bbox, mesh, outpath = parse_args(args, ds_in)
+    varnames, timerange, bbox, mesh, savepath = parse_args(args, ds_in)
 
     # Build remapper objects
-    remapvars = pptools.build_remapper(mesh)
+    remapvars = pptools.build_remapper(mesh, bbox=bbox)
 
     # Slice timerange
     ds_in = ds_in.sel(time=slice(*timerange))
@@ -109,19 +108,23 @@ def build_mpas_2D(args):
         # Load variables on subdomain into full domain and remap to lonlat
         for name in varnames:
             da = ds[name].mean(dim='time')
-            da = pptools.remap(da, **remapvars, bbox=bbox)
+            if 'depths' in da.dims:
+                da = [pptools.remap(da.sel(depths=depth), **remapvars) for depth in da.depths]
+                da = xr.concat(da, 'depths') # **Check that 'depths' is sufficent for new index
+            else:
+                da = pptools.remap(da, **remapvars)
             dataarrays[name].append(da)
 
         # Calculate spatial water mass transformation
         if args.calctrans:
-            wmtvars = pptools.calc_wmt(ds, remapvars=remapvars, bbox)
+            wmtvars = pptools.calc_wmt(ds, remapvars=remapvars)
             for name in wmtvars:
                 dataarrays[name].append(wmtvars[name])
     
     # Concatenate months and save to netCDF
     monthsindex = pd.Index(months, name='months')
     dataarrays = {name: xr.concat(dataarrays[name], monthsindex) for name in dataarrays}
-    xr.Dataset(dataarrays).to_netcdf(outpath)
+    xr.Dataset(dataarrays).to_netcdf(savepath)
 
 
 if __name__ == "__main__":
