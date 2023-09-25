@@ -10,5 +10,5 @@ Below is a summary of the code that handles each step of the WMT calculations:
 
    * state variables [`modules/aggregate_mpas_2Dvariables.py`](modules/aggregate_mpas_2Dvariables.py#L174)
    * surface flux definitions [`yaml/variable_combinations.yaml`](yaml/variable_combinations.yaml)
-   * buoyancy fluxes [`modules/postprocesstools.py`](modules/postprocesstools.py#116)
-   * outcrop integration [`modules/postprocesstools.py`](modules/postprocesstools.py#137)
+   * buoyancy fluxes [`modules/postprocesstools.py`](modules/postprocesstools.py#L116)
+   * outcrop integration [`modules/postprocesstools.py`](modules/postprocesstools.py#L137)
