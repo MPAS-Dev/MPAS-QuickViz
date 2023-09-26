@@ -4,7 +4,7 @@ Development space for code and visualization related to water mass analysis in M
 
 The primary method used in this analysis is the Walin air-sea flux framework ([Walin 1982, Tellus](https://doi.org/10.3402/tellusa.v34i2.10801); [Speer and Tziperman 1992](https://doi.org/10.1175/1520-0485(1992)022<0093:ROWMFI>2.0.CO;2)). Briefly, the mode water transformation $F$ and formation $M$ are defined in terms of the net air/sea density flux $f$ area-integrated over an isopycnal outcrop.
 
-$$f = -\frac{\alpha\Phi_{\text{\heat}}}{C_p} + \beta S\Phi_{\text{\fresh}} \hspace{100pt} F(\rho) = \frac{\partial}{\partial\rho}\iint_{A}f\delta(\rho-\rho_0)dA \hspace{100pt} M(\rho) = - \frac{\partial F}{\partial\rho}$$
+$$f = -\frac{\alpha\Phi_{\heat}}{C_p} + \beta S\Phi_{\fresh} \hspace{100pt} F(\rho) = \frac{\partial}{\partial\rho}\iint_{A}f\delta(\rho-\rho_0)dA \hspace{100pt} M(\rho) = - \frac{\partial F}{\partial\rho}$$
 
 Below is a summary of the code that handles each step of the WMT calculations:
 
@@ -15,7 +15,7 @@ Below is a summary of the code that handles each step of the WMT calculations:
 
 ### Postprocessing
 
-This code space contains several functions and executable modules written to handle the MPAS-Ocean postprocessing steps for performing the WMT analysis:
+This code space contains several functions and executable modules written to handle the MPAS-Ocean postprocessing steps for performing the WMT analysis.
 
 [`modules/aggregate_mpas_2Dvariables.py`](modules/aggregate_mpas_2Dvariables.py)
 
