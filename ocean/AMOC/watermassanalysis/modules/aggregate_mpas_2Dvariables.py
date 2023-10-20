@@ -95,7 +95,7 @@ def load_MPASO_mesh(paths):
         subdomain = regionMasks.sum(dim='nRegions', dtype=bool).values
         coords = {
             'regionMasks': regionMasks.values[subdomain, :],
-            'regionNames': ds.regionNames.values,
+            'regionNames': ds.regionNames.values.astype(str),
         }
 
     # Load mesh variables on subdomain
@@ -130,6 +130,9 @@ def load_MPASO_results(
         # Depth integration parameters
         if coords is not None:
             kindex, thickness, thicktotals = get_depthint_params(ds, coords, subdomain)
+        
+        # Volumetric TS
+        results = volumetric_TS(ds, results, coords, subdomain)
         
         # Load 2-D variables
         for names in vardefs['2D'].values():
@@ -171,6 +174,30 @@ def load_MPASO_results(
     return results
 
 
+def volumetric_TS(ds, results, coords, subdomain, prefix='timeMonthly_avg_'):
+    """Calculate volumetric TS for MPAS results. Uses `numpy.histogramdd` to
+    create the volume-weighted 2D TS histogram.
+    """
+    
+    # Grab 3D fields
+    names = ['activeTracers_salinity', 'activeTracers_temperature', 'layerThickness']
+    S, T, V = [ds[prefix + name][0, subdomain, :].values for name in names]
+    V = V * coords['area'][:, None]
+    bins = [coords['temperatureBins'], coords['salinityBins']]
+    
+    # Loop through regions
+    volume = []
+    for region in coords['regionMasks'].T:
+        s, t, v = [var[region, :].ravel() for var in (S, T, V)]
+        vol, _ = np.histogramdd((t, s), weights=v, bins=bins)
+        volume.append(vol * 1e-12)
+    
+    # Add to dictionaries
+    results['volumetricTS'] = np.array(volume)[None, ...]
+    
+    return results
+
+
 def calc_state_variables(results, P=0):
     """State Equation from Jackett and McDougal 1995
     Use package fastjmd95 by R. Abernathey and J. Busecke
@@ -208,9 +235,11 @@ def write_output(variables, coords, paths):
     
     # Build xarray dataset coordinate arrays
     coordinates = {
-        'time'       : ('time'       , coords['time']),
-        'nCells'     : ('nCells'     , coords['nCells']),
-        'regionNames': ('regionNames', coords['regionNames']),
+        'time'           : ('time'           , coords['time']),
+        'nCells'         : ('nCells'         , coords['nCells']),
+        'regionNames'    : ('regionNames'    , coords['regionNames']),
+        'temperatureBins': ('temperatureBins', coords['temperatureBins'][:-1]),
+        'salinityBins'   : ('salinityBins'   , coords['salinityBins'][:-1]),
     }
     datavars = {
         'lon'        : ( 'nCells', coords['lon']),
@@ -224,8 +253,12 @@ def write_output(variables, coords, paths):
     for name in variables:
         variable = np.vstack(variables[name])
         
+        # Volumetric TS
+        if name == 'volumetricTS':
+            datavars[name] = (['time', 'regionNames', 'temperatureBins', 'salinityBins'], variable)
+        
         # Dims for 3D vars with depth averages
-        if variable.ndim == 3:
+        elif variable.ndim == 3:
             datavars[name] = (dims + ['depths'], variable)
             if 'depths' not in coordinates:
                 coordinates['depths'] = ('depths', coords['depths'])
@@ -248,7 +281,13 @@ def aggregate_mpas_2D(pathsfile):
     paths, vardefs = load_paths_vardefs(pathsfile)
     coords, subdomain = load_MPASO_mesh(paths)
     coords['time'], dateranges = build_time_array(paths['results'])
-    coords['depths'] = [0, 100, 500] # Averging depths (0 required)
+    
+    # More coords
+    coords.update({
+        'depths'         : [0, 100, 500],                # Averging depths (0 required)
+        'temperatureBins': np.arange(-3, 20.1, 0.1),     # Temperature bins for TS
+        'salinityBins'   : np.arange(33, 37.01, 0.01),   # Salinity bins for TS
+    })
 
     # Loop through filenames
     variables = {}
