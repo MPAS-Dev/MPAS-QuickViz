@@ -94,7 +94,7 @@ def load_MPASO_mesh(paths):
         regionMasks = ds.regionCellMasks
         subdomain = regionMasks.sum(dim='nRegions', dtype=bool).values
         coords = {
-            'regionMasks': regionMasks.values[subdomain, :],
+            'regionMasks': regionMasks.values[subdomain, :].astype(bool).T,
             'regionNames': ds.regionNames.values.astype(str),
         }
 
@@ -140,7 +140,7 @@ def load_MPASO_results(
                 varname = prefix + name
                 results[name] = ds[varname][0, :].values[subdomain]
         
-        # Load 3-D variables
+        # Load 3-D variables       
         for ctgy, names in vardefs['3D'].items():
             tag = ctgy + '_' if 'activeTracer' in ctgy else ''
             for name in names:
@@ -187,10 +187,10 @@ def volumetric_TS(ds, results, coords, subdomain, prefix='timeMonthly_avg_'):
     
     # Loop through regions
     volume = []
-    for region in coords['regionMasks'].T:
+    for region in coords['regionMasks']:
         s, t, v = [var[region, :].ravel() for var in (S, T, V)]
         vol, _ = np.histogramdd((t, s), weights=v, bins=bins)
-        volume.append(vol * 1e-12)
+        volume.append(vol * 1e-9) # km3
     
     # Add to dictionaries
     results['volumetricTS'] = np.array(volume)[None, ...]
@@ -245,7 +245,7 @@ def write_output(variables, coords, paths):
         'lon'        : ( 'nCells', coords['lon']),
         'lat'        : ( 'nCells', coords['lat']),
         'area'       : ( 'nCells', coords['area']),
-        'regionMasks': (['nCells', 'regionNames'], coords['regionMasks']),
+        'regionMasks': (['nCells', 'regionNames'], coords['regionMasks'].astype(int).T),
     }
 
     # Build xarray dataset variable arrays
@@ -296,7 +296,7 @@ def aggregate_mpas_2D(pathsfile):
         # Load results and calculate state variables
         filename = build_MPASO_filename(date, dateranges, paths)
         results = load_MPASO_results(filename, vardefs, subdomain, coords=coords)
-        results = calc_state_variables(results)
+        #results = calc_state_variables(results)
         
         # Append results to list
         for name in results:
