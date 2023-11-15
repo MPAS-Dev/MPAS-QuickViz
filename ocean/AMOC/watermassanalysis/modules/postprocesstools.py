@@ -95,7 +95,7 @@ def remap(da_in, da_full, remapper, bbox=[-100, 20, 0, 80]):
     
     # Remap to lonlat
     da_full.loc[da_in.nCells] = da_in
-    da_out = remapper.remap(da_full).sel(**bbox)
+    da_out = remapper.remap(da_full).sel(lon=slice(*bbox[:2]), lat=slice(*bbox[2:]))
     
     return da_out
 
