@@ -1,0 +1,79 @@
+see online version of this doc at 
+https://docs.google.com/document/d/1fMTzQSlcj8F8VR9pNpOmkGJxhse6ABXjEHV9iOzVNSQ/edit#heading=h.okwwiyrlpwyf
+How to use pointwise stats MPAS-Ocean
+Jan 31 2024
+
+in namelist:
+&AM_pointwiseStats
+    config_AM_pointwiseStats_enable = .true.
+    config_AM_pointwiseStats_compute_interval = 'output_interval'
+    config_AM_pointwiseStats_output_stream = 'pointwiseStatsOutput'
+    config_AM_pointwiseStats_compute_on_startup = .true.
+    config_AM_pointwiseStats_write_on_startup = .true.
+/
+
+Add to streams.ocean. Note file name must match for input points:
+<stream name="pointLocationsInput"
+        type="input"
+        filename_template="points.nc"
+        input_interval="initial_only" >
+
+  <var name="pointCellGlobalID"/>
+</stream>
+
+<stream name="pointwiseStatsOutput"
+        type="output"
+        filename_template="mpaso.hist.pointwiseStats.$Y-$M-$D.nc"
+        filename_interval="01-00-00_00:00:00"
+        reference_time="0001-01-01_00:00:00"
+        clobber_mode="append"
+        precision="single"
+        packages="pointwiseStatsAMPKG"
+        output_interval="00-00-00_01:00:00" >
+
+  <var name="pointCellGlobalID"/>
+  <var name="xtime"/>
+  <var name="latCell"/>
+  <var name="lonCell"/>
+  <var name="maxLevelCell"/>
+  <var_struct name="tracers"/>
+  <var name="velocityZonal"/>
+  <var name="velocityMeridional"/>
+  <var name="vertVelocityTop"/>
+
+</stream>
+
+Choose your file name, output interval and variables above. Single precision should be fine.
+Note inside E3SM script, filename can be something like
+cime_config/buildnml:
+lines.append('        filename_template="{}.mpaso{}.hist.am.pointwiseStats.$Y-$M-$D_$h.$m.$s.nc"'.format(casename, inst_string))
+
+but you can also just add to a custom streams.ocean for this run, rather than add it to the cime_config/buildnml file.
+To make the points.nc input file
+You start with a geojson points file like this. You can visualize at https://geojson.io/ 
+file points.geojson
+{
+    "type": "FeatureCollection",
+    "groupName": "unspecifiedGroupName",
+    "features": [
+{ "type": "Feature", "properties": { "object": "point","name": "1"}, "geometry": { "type": "Point", "coordinates": [ -30.0,  50.0 ] } },
+{ "type": "Feature", "properties": { "object": "point","name": "2"}, "geometry": { "type": "Point", "coordinates": [ -40.0,  40.0 ] } },
+{ "type": "Feature", "properties": { "object": "point","name": "3"}, "geometry": { "type": "Point", "coordinates": [ -50.0,  40.0 ] } },
+{ "type": "Feature", "properties": { "object": "point","name": "4"}, "geometry": { "type": "Point", "coordinates": [ -60.0,  40.0 ] } },
+{ "type": "Feature", "properties": { "object": "point","name": "5"}, "geometry": { "type": "Point", "coordinates": [ -70.0,  40.0 ] } },
+{ "type": "Feature", "properties": { "object": "point","name": "6"}, "geometry": { "type": "Point", "coordinates": [ -80.0,  40.0 ] } },
+{ "type": "Feature", "properties": { "object": "point","name": "7"}, "geometry": { "type": "Point", "coordinates": [  90.0,  60.0 ] } }
+    ]
+}
+
+Note the name ("name": "1") and coordinates need to change on every line. If the point is over land, it will take the nearest ocean point.
+
+Then create a mesh mask file for these points:
+For example. load e3sm unified on chicoma:
+source /usr/projects/climate/SHARED_CLIMATE/anaconda_envs/load_latest_e3sm_unified_badger.sh
+MpasMaskCreator.x init.nc points.nc -f points.geojson
+
+This points.nc is the file read in by the analysis member. Here init.nc is any file with the MPAS mesh that you create points for.
+
+
+
