@@ -1,7 +1,9 @@
 prefix: 20210421_sim7_CORE_60to30E2r2.mpaso.hist.am.timeSeriesStatsMonthly
 results:
     1947-1957: /pscratch/sd/l/lvroekel/LR/run_001_062
+    1957-1967: /pscratch/sd/l/lvroekel/LR/run_001_062
     1997-2007: /pscratch/sd/l/lvroekel/LR/run_001_062
 meshfile: /global/cfs/cdirs/e3sm/inputdata/ocn/mpas-o/EC30to60E2r2/ocean.EC30to60E2r2.210210.nc
 maskfile: /pscratch/sd/b/bmoorema/maskfiles/EC30to60E2r2_transformationbudgetmasks20240109.nc
+maskfile_AO: /pscratch/sd/b/bmoorema/maskfiles/EC30to60E2r2_atlanticmask20240205.nc
 out: /pscratch/sd/b/bmoorema/results/aggregated/raw
