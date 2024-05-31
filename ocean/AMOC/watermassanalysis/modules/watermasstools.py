@@ -10,7 +10,7 @@
 import numpy as np
 import xarray as xr
 import yaml
-from fastjmd95 import rho, drhodt, drhods
+import fastjmd95 as jmd95
 import postprocesstools as pptools
 
 
@@ -29,8 +29,6 @@ def build_sigma_bins(sigmarange, binsize):
 def calc_state_variables(S, T, P=0):
     """State Equation from Jackett and McDougal 1995
     Use package fastjmd95 by R. Abernathey and J. Busecke
-
-         `pip install fastjmd95`
     """
 
     # Define constants
@@ -38,20 +36,24 @@ def calc_state_variables(S, T, P=0):
     cpsw = 3.996e3    # Heat capacity of seawater [J kg-1 K-1]
 
     # Calculate state variables
-    sigmaTheta = rho(S, T, P) - 1000
-    heatFactor = drhodt(S, T, P) / rho0 / cpsw
-    saltFactor = -drhods(S, T, P) / rho0 * S
+    sigmaTheta = jmd95.rho(S, T, P) - 1000
+    heatFactor = jmd95.drhodt(S, T, P) / rho0 / cpsw
+    saltFactor = -jmd95.drhods(S, T, P) / rho0
 
     return sigmaTheta, heatFactor, saltFactor
 
 
 def build_combined_fluxes(
-    ds_in, heatFactor, saltFactor, subdomain=None, prefix='timeMonthly_avg_',
+    ds_in, heatFactor, saltFactor, salinity, subdomain=None, prefix='timeMonthly_avg_',
     fluxdefs='../yaml/variable_combinations.yaml',
 ):
     """Build combined surface flux variables based on the combined definitions
-    in the `vardefs` yaml file. Also build the buoyancy fluxes explicitly.
+    in the `fluxdefs` yaml file. Also build the buoyancy fluxes explicitly.
     """
+    
+    # Define constants
+    rho0 = 1026.0     # Seawater density constant [kg m-3]
+    rho_fw = 1e3      # Freshwater density constant [kg m3]
     
     # Define subdomain index
     index = subdomain if subdomain is not None else slice(None, None)
@@ -60,10 +62,28 @@ def build_combined_fluxes(
     with open(fluxdefs, 'r') as f:
         ctgys = yaml.safe_load(f)
     
-    # Combine variables
-    fluxes = {ctgy: sum([ds_in[prefix + name][0, :].values[index] for name in ctgys[ctgy]]) for ctgy in ctgys}
+    # Load fluxes from xarray, fill missing variables as zero
+    fluxes = {}
+    for ctgy, varNames in ctgys.items():
+        fluxes[ctgy] = 0
+        for varName in varNames:
+            try:
+                variable = ds_in[prefix + varName][0, :].values[index]
+            except KeyError:
+                variable = 0
+            fluxes[ctgy] = fluxes[ctgy] + variable
+    
+    # Buoyancy flux due to heat
     fluxes['buoyancyHeatFlux'] = heatFactor * fluxes['totalHeatFlux']
-    fluxes['buoyancySaltFlux'] = saltFactor * fluxes['totalSaltFlux']
+    
+    # Buoyancy flux due to salt
+    fluxes['buoyancySaltFlux'] = saltFactor * (
+        salinity * fluxes['totalFreshFlux'] -             # FW mass flux times salinity
+        1e3 * rho_fw / rho0 * fluxes['totalSaltFlux'] -   # Salt mass flux times 1e3 * rho_fw / rho_sw
+        rho_fw * fluxes['totalSalinityFlux']              # Salinity flux times rho_fw
+    )
+    
+    # Total buoyancy flux
     fluxes['buoyancyTotalFlux'] = fluxes['buoyancyHeatFlux'] + fluxes['buoyancySaltFlux']
     
     return fluxes
@@ -119,7 +139,7 @@ def calc_wmt(
             else:
                 
                 # Multiply by area
-                flux = flux * coords['area'][sigmaMask]
+                flux = flux * coords['areaCell'][sigmaMask]
                 
                 # Calculate by region
                 if regions is not None:
@@ -128,7 +148,7 @@ def calc_wmt(
                     transformation = []
                     for region in regions:
                         index, = np.where(coords['regionNames'] == region)
-                        regionMask = coords['regionMasks'][sigmaMask, index[0]]
+                        regionMask = coords['regionCellMasks'][sigmaMask, index[0]]
                         transformation.append(flux[regionMask].sum(axis=0))
                 
                 # Calculate global transformation only
