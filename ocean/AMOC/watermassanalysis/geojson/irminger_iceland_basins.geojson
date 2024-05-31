@@ -4,8 +4,8 @@
         {
             "type": "Feature",
             "properties": {
-                "name": "Irminger Iceland Rockall",
-                "tags": "Irminger_Iceland_Rockall;Arctic;Atlantic_Basin",
+                "name": "Irminger-Iceland Basins",
+                "tags": "Irminger_Iceland_Basins;Arctic;Atlantic_Basin",
                 "object": "region",
                 "component": "ocean",
                 "author": "Ben Moore-Maley"

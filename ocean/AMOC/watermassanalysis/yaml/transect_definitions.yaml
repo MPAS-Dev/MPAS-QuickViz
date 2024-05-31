@@ -1,0 +1,28 @@
+Labrador Sea:
+    transectNames: [OSNAP West, Davis Strait, Hudson Bay]
+    signChanges: [1, -1, -1]
+    orders:
+        LR: [-1, -1, 1]
+        HR: [1, 1, 1, -1, 1]
+    sections:
+        LR: [[0], [1], [2]]
+        HR: [[0], [1], [4, 3, 2]]
+Irminger-Iceland Basins:
+    transectNames: [OSNAP East, Denmark Strait, Iceland-Faroe Ridge]
+    signChanges: [1, -1, -1]
+    orders:
+        LR: [1, -1, 1]
+        HR: [-1, 1, -1, 1, 1, 1]
+    sections:
+        LR: [[0], [1], [2]]
+        HR: [[0, 1], [5], [3, 2, 4]]
+Nordic Seas:
+    transectNames: [Denmark Strait, Iceland-Faroe Ridge, Fram Strait, Barents Sea, North Sea]
+    signChanges: [1, 1, -1, -1, -1]
+    orders:
+        LR: [1, 1, -1, -1, 1, -1]
+        HR: [1, 1, 1, 1, -1, 1, 1, 1, 1]
+    sections:
+        LR: [[3], [4], [5], [0, 1], [2]]
+        HR: [[7], [5, 4, 6], [0], [8, 1], [2, 3]]
+        
