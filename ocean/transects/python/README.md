@@ -46,5 +46,12 @@ The required inputs are an MPAS mesh file and a geojson file or the name of an
 ocean transect from `geometric_features`.  The required output is a filename
 with the masks and other information about the transect.
 
+## cut_closed_transect.py
 
+If a transect is a closed loop, the path of edges and edge signs don't work
+correctly (the shortest path between the beginning and end of the transect is
+trivial and involves a single edge). To avoid this, we provide a tool for
+cutting a square (in lat/lon space) out of the transect to sever the loop.
+The user provides a latitude and longitude (used to locate the closest point)
+on the transect and the size of the square to cut out.
 
