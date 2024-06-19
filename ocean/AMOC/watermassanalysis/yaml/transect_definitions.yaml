@@ -25,4 +25,21 @@ Nordic Seas:
     sections:
         LR: [[3], [4], [5], [0, 1], [2]]
         HR: [[7], [5, 4, 6], [0], [8, 1], [2, 3]]
-        
+Irminger Sea:
+    transectNames: [OSNAP East-Reykjanes, Denmark Strait]
+    signChanges: [1, -1]
+    orders:
+        LR: [1, -1]
+        HR: [1, 1]
+    sections:
+        LR: [[0], [1]]
+        HR: [[0], [1]]
+Iceland-Rockall:
+    transectNames: [Reykjanes-OSNAP East, Iceland-Faroe Ridge]
+    signChanges: [1, -1]
+    orders:
+        LR: [-1, 1]
+        HR: [-1, 1, -1, 1, 1]
+    sections:
+        LR: [[0], [1]]
+        HR: [[0, 1], [3, 2, 4]]
