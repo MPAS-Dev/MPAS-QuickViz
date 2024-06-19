@@ -11,6 +11,20 @@ import numpy as np
 import yaml
 
 
+def get_transect_distance(lons, lats, d0=0, radius=6362):
+    """Calculate the great circle (haversine) distance in kilometers
+    between two points on the earth (specified in decimal degrees)
+    """
+
+    # Calculate cumulative haversine distance
+    lons, lats = np.deg2rad(lons), np.deg2rad(lats)
+    a = np.sin(np.diff(lats)/2)**2 + np.cos(lats[:-1]) * np.cos(lats[1:]) * np.sin(np.diff(lons)/2)**2
+    distance = 2 * radius * np.arcsin(np.sqrt(a))
+    distance = np.insert(np.cumsum(distance) + d0, 0, d0)
+
+    return distance
+
+
 def get_region_edges(regionCellMask, cellsOnEdge):
     """Get open water edges of an MPAS-Ocean masked region. Code adapted from Alice Barthel.
     Uses Python indexing, so subtract 1 from cellsOnEdge before calling this function.
@@ -107,7 +121,7 @@ def get_transect_masks_from_regions(meshName, coords):
     
     # Loop through regions
     transectMasks = {}
-    regionNames = ['Labrador Sea', 'Irminger-Iceland Basins', 'Nordic Seas']
+    regionNames = ['Labrador Sea', 'Irminger-Iceland Basins', 'Nordic Seas', 'Irminger Sea', 'Iceland-Rockall']
     for regionName in regionNames:
         
         # Get regionCellMask from regionName
@@ -127,16 +141,19 @@ def get_transect_masks_from_regions(meshName, coords):
         index = np.split(index, np.where(index == -1)[0][1:])
 
         # Remove -1 separator and reverse order of each section
-        index = [idx[idx > 0][::order] for idx, order in zip(index, orders)]
+        index = [idx[idx >= 0][::order] for idx, order in zip(index, orders)]
         
         # For each transect, combine requested sections and apply sign change
         for section, transectName, signChange in zip(sections, transectNames, signChanges):
             idx = np.hstack([index[i] for i in section])
-            dvEdge = coords['dvEdge'][edges[idx]]
+            lonEdge, latEdge, dvEdge = [coords[name][edges[idx]] for name in ('lonEdge', 'latEdge', 'dvEdge')]
             transectMasks[transectName] = {
                 'edges': edges[idx],
                 'signs': signs[idx] * signChange,
-                'distance': np.cumsum(dvEdge) - dvEdge / 2,
+                'lonEdge': lonEdge,
+                'latEdge': latEdge,
+                'dvEdge': dvEdge,
+                'distance': get_transect_distance(lonEdge, latEdge, d0=dvEdge[0]/2*1e-3),
             }
     
     return transectMasks
