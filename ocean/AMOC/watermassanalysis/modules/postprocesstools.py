@@ -68,7 +68,7 @@ def interpolate_to_edge(varCell, cellsOnEdge, subdomain):
     return varEdge
 
 
-def load_coords(meshName, bbox=[-70, 23, 44, 80]):
+def load_coords(meshName, bbox=[-100, 40, 40, 85]):
     """Load MPAS coordinates for various analyses
     """
     

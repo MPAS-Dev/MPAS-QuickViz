@@ -9,60 +9,88 @@
 
 import numpy as np
 import xarray as xr
+import pandas as pd
 import yaml
 import fastjmd95 as jmd95
 import postprocesstools as pptools
+from itertools import pairwise
 
 
-def build_sigma_bins(sigmarange, binsize):
-    """Build sigma classes array given `sigmarange` and `binsize`
-    Return as `pandas.Index` object
+def define_constants():
+    """Define constants for use in water mass transformation calculations
     """
     
-    # Build sigma classes array
-    nbins = int(abs(np.subtract(*sigmarange)) / binsize) + 1
-    sigmabins = np.arange(nbins) * binsize + sigmarange[0]
+    # Define constants
+    cpsw = 3996.0     # Heat capacity of seawater [J kg-1 K-1]
+    rho_sw = 1026.0   # Seawater density constant [kg m-3]
+    rho_fw = 1000.0   # Freshwater density constant [kg m3]
     
-    return sigmabins
+    return cpsw, rho_sw, rho_fw
 
 
 def calc_state_variables(S, T, P=0):
-    """State Equation from Jackett and McDougal 1995
-    Use package fastjmd95 by R. Abernathey and J. Busecke
-    """
-
-    # Define constants
-    rho0 = 1026.0     # Seawater density constant [kg m-3]
-    cpsw = 3.996e3    # Heat capacity of seawater [J kg-1 K-1]
-
-    # Calculate state variables
-    sigmaTheta = jmd95.rho(S, T, P) - 1000
-    heatFactor = jmd95.drhodt(S, T, P) / rho0 / cpsw
-    saltFactor = -jmd95.drhods(S, T, P) / rho0
-
-    return sigmaTheta, heatFactor, saltFactor
-
-
-def build_combined_fluxes(
-    ds_in, heatFactor, saltFactor, salinity, subdomain=None, prefix='timeMonthly_avg_',
-    fluxdefs='../yaml/variable_combinations.yaml',
-):
-    """Build combined surface flux variables based on the combined definitions
-    in the `fluxdefs` yaml file. Also build the buoyancy fluxes explicitly.
+    """Calculate state variables following Jacket and McDougall 1995.
     """
     
     # Define constants
-    rho0 = 1026.0     # Seawater density constant [kg m-3]
-    rho_fw = 1e3      # Freshwater density constant [kg m3]
+    cpsw, rho_sw, rho_fw = define_constants()
+    
+    # Calculate state variables
+    density = jmd95.rho(S, T, P)
+    alpha = -jmd95.drhodt(S, T, P) / rho_sw
+    beta = jmd95.drhods(S, T, P) / rho_sw
+    
+    return density, alpha, beta
+
+
+def get_bins_edges(start, stop, step):
+    """Get bins and edges
+    """
+    
+    # Get bins and edges
+    bins = np.arange((stop - start) / step + 2) * step + start
+    edges = bins - step / 2
+    
+    return bins[:-1], edges
+
+
+def calc_bin_masks(array, edges):
+    """Calculate array masks for each consecutive bin given by edges
+    """
+    
+    # Calculate mask
+    mask = [np.where((array >= l) & (array < u))[0] for l, u in pairwise(edges)]
+    
+    return mask
+
+
+def build_fluxes(
+    ds_in, subdomain=None, prefix='timeMonthly_avg_',
+    fluxdefs='../yaml/variable_combinations.yaml',
+):
+    """Build surface flux variables based on the definitions in the
+    `fluxdefs` yaml file. Thermal and haline transformation terms are
+    defined separately following Evans et al. 2014 JGR Oceans.
+    """
+    
+    # Define constants
+    cpsw, rho_sw, rho_fw = define_constants()
     
     # Define subdomain index
     index = subdomain if subdomain is not None else slice(None, None)
     
-    # Open variable definitions
+    # Load salinity and temperature
+    varNames = ['activeTracers_salinity', 'activeTracers_temperature']
+    S, T = [ds_in[prefix + varName][0, :, 0].values[index] for varName in varNames]
+    
+    # Calculate state variables
+    density, alpha, beta = calc_state_variables(S, T)
+    
+    # Open flux definitions yaml file
     with open(fluxdefs, 'r') as f:
         ctgys = yaml.safe_load(f)
     
-    # Load fluxes from xarray, fill missing variables as zero
+    # Load fluxes, assign missing fluxes to zero
     fluxes = {}
     for ctgy, varNames in ctgys.items():
         fluxes[ctgy] = 0
@@ -73,109 +101,110 @@ def build_combined_fluxes(
                 variable = 0
             fluxes[ctgy] = fluxes[ctgy] + variable
     
-    # Buoyancy flux due to heat
-    fluxes['buoyancyHeatFlux'] = heatFactor * fluxes['totalHeatFlux']
+    # Temperature mass flux [degC kg m-2 s-1]
+    fluxes['temperatureFlux'] = fluxes['totalHeatFlux'] / cpsw
     
-    # Buoyancy flux due to salt
-    fluxes['buoyancySaltFlux'] = saltFactor * (
-        salinity * fluxes['totalFreshFlux'] -             # FW mass flux times salinity
-        1e3 * rho_fw / rho0 * fluxes['totalSaltFlux'] -   # Salt mass flux times 1e3 * rho_fw / rho_sw
-        rho_fw * fluxes['totalSalinityFlux']              # Salinity flux times rho_fw
+    # Salinity volume flux [PSU m s-1]
+    fluxes['salinityFlux'] = (
+        fluxes['totalSalinityFlux'] +              # PSU m s-1
+        1e3 / rho_sw * fluxes['totalSaltFlux'] -   # g/kg SALT / rho_sw * kg SALT m-2 s-1
+        S / rho_fw * fluxes['totalFreshFlux']      # S / rho_fw * kg FW m-2 s-1
     )
     
-    # Total buoyancy flux
-    fluxes['buoyancyTotalFlux'] = fluxes['buoyancyHeatFlux'] + fluxes['buoyancySaltFlux']
+    # Density fluxes [kg m-2 s-1]
+    fluxes['densityHeatFlux'] = -alpha * fluxes['temperatureFlux']
+    fluxes['densitySaltFlux'] = beta * rho_fw * fluxes['salinityFlux']
+    fluxes['densityTotalFlux'] = fluxes['densityHeatFlux'] + fluxes['densitySaltFlux']
+    
+    # Convert temperature mass flux to volume flux [degC m s-1]
+    fluxes['temperatureFlux'] = fluxes['temperatureFlux'] / density
+    
+    # Add state variables to fluxes
+    fluxes.update({'salinity': S, 'temperature': T, 'density': density - 1000})
     
     return fluxes
 
 
-def calc_wmt(
-    fluxes, sigmaTheta, coords, regions=None,
-    remapvars=None, sigmarange=[21, 29], binsize=0.1,
-):
-    """Calculate time-averaged water mass transformation over specified sigma bins,
-    remap to lon, lat and return in sigma-lonlat space as an `xr.Dataset`
+def calc_wmt(fluxes, coords, binNames, binArgs, remapvars=None, regions=None):
+    """Calculate time-averaged water mass transformation over specified bins
+    and return in sigma space as an `xr.Dataset`
     """
     
-    # Build sigma variables
-    sigmabins = build_sigma_bins(sigmarange, binsize)
+    # Get coordinate variables
+    names = ['nCells', 'areaCell', 'regionNames', 'regionCellMasks']
+    nCells, areaCell, regionNames, regionCellMasks = [coords[name] for name in names]
     
-    # Define unit scale (1D: Sv, 2D: 1e-6 Sv km-2)
-    scale = 1e-6 if remapvars is None else 1e6
+    # If multiple bin names assume TS space, otherwise single binning dimension
+    if isinstance(binNames, (list, tuple)):
+        fluxNames = [name + 'Flux' for name in binNames]
+        binSizes = [args[2] for args in binArgs]
+    else:
+        fluxNames = [name for name in fluxes if binNames in name and 'Flux' in name]
+        binSizes = [binArgs[2]] * len(fluxNames)
+        binNames, binArgs = [binNames], [binArgs]
     
-    # Initialize variables dict
-    ctgys = ['heat', 'salt', 'total']
-    variables = {ctgy + 'Transformation': [] for ctgy in ctgys}
+    # Build bins and edges
+    bins, edges = zip(*[get_bins_edges(*args) for args in binArgs])
     
-    # Initialize lonlat if 2D
+    # If 2D map, specify method and build bin masks manually
     if remapvars is not None:
-        lon, lat = None, None
-
-    # ----------------------------------------------------------------------
-    # Loop through sigmabins
-    for sigmabin in sigmabins:
-
-        # Create sigma mask
-        sigmaMask = (sigmaTheta >= sigmabin) & (sigmaTheta <= sigmabin + binsize)
-
-        # Loop through flux categories
-        for ctgy in ctgys:
-            
-            # Extract flux and apply sigma mask
-            flux = fluxes[f'buoyancy{ctgy.capitalize()}Flux'][sigmaMask]
-            
-            # --------------------------------------------------------------
-            # Return spatial transformation map (2D output)
-            if remapvars is not None:
-                
-                # Remap to lonlat, get coordinates and convert to numpy
-                transformation = pptools.remap(flux, coords['nCells'][sigmaMask], **remapvars)
-                if lon is None or lat is None:
-                    lon, lat = [transformation[name].values for name in ('lon', 'lat')]
-                transformation = transformation.values
-            
-            # --------------------------------------------------------------
-            # Integrate over sigma outcrop (1D output)
-            else:
-                
-                # Multiply by area
-                flux = flux * coords['areaCell'][sigmaMask]
-                
-                # Calculate by region
-                if regions is not None:
-                    
-                    # Loop over regions
-                    transformation = []
-                    for region in regions:
-                        index, = np.where(coords['regionNames'] == region)
-                        regionMask = coords['regionCellMasks'][sigmaMask, index[0]]
-                        transformation.append(flux[regionMask].sum(axis=0))
-                
-                # Calculate global transformation only
-                else:
-                    transformation = flux.sum(axis=0)
-
-            # --------------------------------------------------------------
-            # Append to list
-            variables[ctgy + 'Transformation'].append(transformation)
-
-    # ----------------------------------------------------------------------
-    # Prepare xarray output
-    #
-    # Define xr.Dataset coordinates
-    coordinates = {'sigmaBins': sigmabins}
+        method = '2D'
+        binMasks = calc_bin_masks(fluxes[binNames[0]], edges[0])
+        binIndex = pd.Index(bins[0], name=binNames[0] + 'Bins')
+    else:
+        method = '1D'
+    
+    # Get region masks if regions requested, else default to open slice
     if regions is not None:
-        coordinates['regionNames'] = regions
-    elif remapvars is not None:
-        coordinates['lat'] = lat
-        coordinates['lon'] = lon
+        regionMasks = [regionCellMasks[:, regionNames == region][:, 0] for region in regions]
+    else:
+        regionMasks = [slice(None, None)]
     
-    # Calculate final transformation and assign to tuple with dims
-    dims = coordinates.keys()
-    for name in variables:
-        variables[name] = (dims, np.array(variables[name]) / binsize * scale)
+    # Loop through fluxNames
+    variables = {}
+    for fluxName, binSize in zip(fluxNames, binSizes):
     
-    # Build xr.Dataset
-    ds_out = xr.Dataset(variables, coordinates)
+        # Init wmtName and get flux array from dict
+        wmtName = fluxName.removesuffix('Flux') + 'Transformation'
+        flux = fluxes[fluxName]
+        
+        # If 2D map, manually loop through binMasks and remap flux to lonlat
+        if method == '2D':
+            wmt = [pptools.remap(flux[mask], nCells[mask], **remapvars) for mask in binMasks]
+            wmt = xr.concat(wmt, dim=binIndex) * 1e6   # 1e-6 Sv km-2
+            wmt.name = wmtName + '2D'
+        
+        # Otherwise area-integrate flux over regions and bin using `numpy` 1d or 2d histograms
+        else:
+            flux, wmt = flux * areaCell, []
+            for mask in regionMasks:
+                x = [fluxes[name][mask] for name in binNames]
+                h, _ = np.histogramdd(x, bins=edges, weights=flux[mask])
+                wmt.append(h)
+            wmt = np.array(wmt).squeeze() * 1e-6   # Sv
+
+        # Assign to variables dict
+        variables[wmtName] = wmt / binSize
+
+    # Build xarray output from remap
+    if method == '2D':
+        
+        # Merge DataArrays from remap output
+        ds = xr.merge(variables.values())
     
-    return ds_out
+    # Build xarray output from concatenated histograms
+    else:
+        
+        # Build coordinates dict
+        coordinates = {}
+        if regions is not None:
+            coordinates['regionNames'] = regions
+        for name, bn in zip(binNames, bins):
+            coordinates[name + 'Bins'] = bn
+    
+        # Build variables dict and make DataSet
+        dims = coordinates.keys()
+        variables = {name: (dims, variables[name]) for name in variables}
+        ds = xr.Dataset(variables, coordinates)
+    
+    return ds
