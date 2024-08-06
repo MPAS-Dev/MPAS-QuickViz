@@ -15,8 +15,7 @@ import time
 import yaml
 import pyremap
 from copy import deepcopy
-from scipy.spatial import KDTree
-
+from scipy import signal
 import transecttools as trtools
 
 
@@ -31,6 +30,34 @@ def loopstatus(k, n, starttime, interval=1):
         time_elapsed = time.time() - starttime
         msg = f'{int(percent)}% complete ... {time_elapsed:.0f} seconds elapsed'
         print(msg, flush=True)
+
+
+def lowpass(data, cutoff=10, window_type='boxcar'):
+    """Apply a Finite Impulse Response (FIR) lowpass filter according
+    to the window_type and cutoff using a convolution algorithm
+    """
+    
+    # Calculate low-pass signal
+    window = signal.get_window(window_type, cutoff)
+    filtered = np.convolve(data, window / sum(window), mode='same')
+    
+    return filtered
+
+
+def downsample(array, widths=(5, 5)):
+    """Downsample array using a groupby mean every w elements.
+    Pads the array dimensions with nan so that `numpy.reshape` can be used
+    in the groupby operation.
+    """
+
+    # Resample array
+    pad = [(0, w-dim%w) for dim, w in zip(array.shape, widths)]
+    array = np.pad(array, pad, constant_values=np.nan)
+    args = [arg for dim, w in zip(array.shape, widths) for arg in (int(dim/w), w)]
+    axis = tuple(i for i, e in enumerate(args) if e in widths)
+    array = np.nanmean(array.reshape(*args), axis=axis)
+    
+    return array
 
 
 def build_savepath_from_file(filein, desc, timerange=None, outdir=''):
