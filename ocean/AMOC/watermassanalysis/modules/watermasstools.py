@@ -64,6 +64,24 @@ def calc_bin_masks(array, edges):
     return mask
 
 
+def parse_bin_args(binNames, binArgs, fluxNames):
+    """Parse binning parameters and flux names from input args
+    """
+
+    # If multiple bin names assume TS space
+    if isinstance(binNames, (list, tuple)):
+        fluxNames = [name + 'Flux' for name in binNames]
+        binSizes = [args[2] for args in binArgs]
+
+    # Otherwise single binning dimension
+    else:
+        fluxNames = [name for name in fluxNames if binNames in name and 'Flux' in name]
+        binSizes = [binArgs[2]] * len(fluxNames)
+        binNames, binArgs = [binNames], [binArgs]
+
+    return binNames, binArgs, binSizes, fluxNames
+
+
 def build_fluxes(
     ds_in, subdomain=None, prefix='timeMonthly_avg_',
     fluxdefs='../yaml/variable_combinations.yaml',
@@ -130,18 +148,12 @@ def calc_wmt(fluxes, coords, binNames, binArgs, remapvars=None, regions=None):
     and return in sigma space as an `xr.Dataset`
     """
     
-    # Get coordinate variables
+    # Unpack coordinate variables
     names = ['nCells', 'areaCell', 'regionNames', 'regionCellMasks']
     nCells, areaCell, regionNames, regionCellMasks = [coords[name] for name in names]
     
-    # If multiple bin names assume TS space, otherwise single binning dimension
-    if isinstance(binNames, (list, tuple)):
-        fluxNames = [name + 'Flux' for name in binNames]
-        binSizes = [args[2] for args in binArgs]
-    else:
-        fluxNames = [name for name in fluxes if binNames in name and 'Flux' in name]
-        binSizes = [binArgs[2]] * len(fluxNames)
-        binNames, binArgs = [binNames], [binArgs]
+    # Parse binning parameters and flux names (assumes TS if binNames is iterable)
+    binNames, binArgs, binSizes, fluxNames = parse_bin_args(binNames, binArgs, fluxes)
     
     # Build bins and edges
     bins, edges = zip(*[get_bins_edges(*args) for args in binArgs])
