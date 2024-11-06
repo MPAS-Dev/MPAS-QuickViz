@@ -7,13 +7,15 @@
     for the ImPACTS Water Mass Analysis project.
 """
 
-import numpy as np
-import xarray as xr
-import pandas as pd
 import yaml
-import fastjmd95 as jmd95
-import postprocesstools as pptools
 from itertools import pairwise
+
+import fastjmd95 as jmd95
+import numpy as np
+import pandas as pd
+import xarray as xr
+
+import postprocesstools as pptools
 
 
 def define_constants():
@@ -59,9 +61,15 @@ def calc_bin_masks(array, edges):
     """
     
     # Calculate mask
-    mask = [np.where((array >= l) & (array < u))[0] for l, u in pairwise(edges)]
+    ndim = array.ndim
+    masks = []
+    for l, u in pairwise(edges):
+        mask = (array >= l) & (array < u)
+        if ndim == 1:
+            mask, = np.where(mask)
+        masks.append(mask)
     
-    return mask
+    return masks
 
 
 def parse_bin_args(binNames, binArgs, fluxNames):
@@ -82,52 +90,55 @@ def parse_bin_args(binNames, binArgs, fluxNames):
     return binNames, binArgs, binSizes, fluxNames
 
 
-def build_fluxes(
-    ds_in, subdomain=None, prefix='timeMonthly_avg_',
-    fluxdefs='../yaml/variable_combinations.yaml',
-):
+def build_fluxes(ds, fluxDefs, subdomain=None, zdim='nVertLevels', prefix='timeMonthly_avg_'):
     """Build surface flux variables based on the definitions in the
-    `fluxdefs` yaml file. Thermal and haline transformation terms are
+    `fluxNames` dict. Thermal and haline transformation terms are
     defined separately following Evans et al. 2014 JGR Oceans.
     """
     
     # Define constants
     cpsw, rho_sw, rho_fw = define_constants()
     
-    # Define subdomain index
-    index = subdomain if subdomain is not None else slice(None, None)
-    
-    # Load salinity and temperature
-    varNames = ['activeTracers_salinity', 'activeTracers_temperature']
-    S, T = [ds_in[prefix + varName][0, :, 0].values[index] for varName in varNames]
+    # Load flux fields from dataset
+    fluxes = {}
+    for ctgy, fluxNames in fluxDefs.items():
+
+        # Load surface salinity and temperature
+        if ctgy in ['salinity', 'temperature']:
+            fluxes[ctgy] = ds[prefix + fluxNames][0, ...].isel(**{zdim: 0}).values
+            if subdomain is not None:
+                fluxes[ctgy] = fluxes[ctgy][subdomain]
+
+        # Load surface fluxes
+        else:
+            fluxes[ctgy] = 0
+            for fluxName, varName in fluxNames.items():
+                varNameFull = prefix + varName
+                if varNameFull in ds:
+                    flux = ds[varNameFull][0, :].values
+                    if subdomain is not None:
+                        flux = flux[subdomain]
+                    if fluxName == 'total':
+                        fluxes[ctgy] = flux
+                    else:
+                        fluxes[fluxName] = flux
+                        if 'total' not in fluxNames:
+                            fluxes[ctgy] = fluxes[ctgy] + flux
     
     # Calculate state variables
-    density, alpha, beta = calc_state_variables(S, T)
-    
-    # Open flux definitions yaml file
-    with open(fluxdefs, 'r') as f:
-        ctgys = yaml.safe_load(f)
-    
-    # Load fluxes, assign missing fluxes to zero
-    fluxes = {}
-    for ctgy, varNames in ctgys.items():
-        fluxes[ctgy] = 0
-        for varName in varNames:
-            try:
-                variable = ds_in[prefix + varName][0, :].values[index]
-            except KeyError:
-                variable = 0
-            fluxes[ctgy] = fluxes[ctgy] + variable
+    density, alpha, beta = calc_state_variables(fluxes['salinity'], fluxes['temperature'])
+    fluxes['density'] = density - 1000
     
     # Temperature mass flux [degC kg m-2 s-1]
     fluxes['temperatureFlux'] = fluxes['totalHeatFlux'] / cpsw
     
     # Salinity volume flux [PSU m s-1]
     fluxes['salinityFlux'] = (
-        fluxes['totalSalinityFlux'] +              # PSU m s-1
-        1e3 / rho_sw * fluxes['totalSaltFlux'] -   # g/kg SALT / rho_sw * kg SALT m-2 s-1
-        S / rho_fw * fluxes['totalFreshFlux']      # S / rho_fw * kg FW m-2 s-1
+        1e3 / rho_sw * fluxes['totalSaltFlux'] -                # g/kg SALT / rho_sw * kg SALT m-2 s-1
+        fluxes['salinity'] / rho_fw * fluxes['totalFreshFlux']  # S / rho_fw * kg FW m-2 s-1
     )
+    if 'totalSalinityFlux' in fluxes:
+        fluxes['salinityFlux'] = fluxes['salinityFlux'] + fluxes['totalSalinityFlux']
     
     # Density fluxes [kg m-2 s-1]
     fluxes['densityHeatFlux'] = -alpha * fluxes['temperatureFlux']
@@ -137,20 +148,13 @@ def build_fluxes(
     # Convert temperature mass flux to volume flux [degC m s-1]
     fluxes['temperatureFlux'] = fluxes['temperatureFlux'] / density
     
-    # Add state variables to fluxes
-    fluxes.update({'salinity': S, 'temperature': T, 'density': density - 1000})
-    
     return fluxes
 
 
-def calc_wmt(fluxes, coords, binNames, binArgs, remapvars=None, regions=None):
+def calc_wmt(fluxes, coords, binNames, binArgs, remapvars=None, regionNames=None):
     """Calculate time-averaged water mass transformation over specified bins
     and return in sigma space as an `xr.Dataset`
     """
-    
-    # Unpack coordinate variables
-    names = ['nCells', 'areaCell', 'regionNames', 'regionCellMasks']
-    nCells, areaCell, regionNames, regionCellMasks = [coords[name] for name in names]
     
     # Parse binning parameters and flux names (assumes TS if binNames is iterable)
     binNames, binArgs, binSizes, fluxNames = parse_bin_args(binNames, binArgs, fluxes)
@@ -161,14 +165,22 @@ def calc_wmt(fluxes, coords, binNames, binArgs, remapvars=None, regions=None):
     # If 2D map, specify method and build bin masks manually
     if remapvars is not None:
         method = '2D'
-        binMasks = calc_bin_masks(fluxes[binNames[0]], edges[0])
+        binArray = fluxes[binNames[0]]
+        ndim = binArray.ndim
+        binMasks = calc_bin_masks(binArray, edges[0])
         binIndex = pd.Index(bins[0], name=binNames[0] + 'Bins')
+        remapvars_local = {key: value for key, value in remapvars.items() if key != 'subdomain'}
+        subdomain = remapvars['subdomain'] if 'subdomain' in remapvars else None
     else:
         method = '1D'
+        areaCell = coords.areaCell.values
     
     # Get region masks if regions requested, else default to open slice
-    if regions is not None:
-        regionMasks = [regionCellMasks[:, regionNames == region][:, 0] for region in regions]
+    if regionNames is not None:
+        regionMasks = []
+        for regionName in regionNames:
+            regionMask = coords.regionCellMasks.sel(regionNames=regionName).values.ravel()
+            regionMasks.append(regionMask)
     else:
         regionMasks = [slice(None, None)]
     
@@ -182,16 +194,28 @@ def calc_wmt(fluxes, coords, binNames, binArgs, remapvars=None, regions=None):
         
         # If 2D map, manually loop through binMasks and remap flux to lonlat
         if method == '2D':
-            wmt = [pptools.remap(flux[mask], nCells[mask], **remapvars) for mask in binMasks]
-            wmt = xr.concat(wmt, dim=binIndex) * 1e6   # 1e-6 Sv km-2
-            wmt.name = wmtName + '2D'
+            if 'Total' not in fluxName:
+                wmt = []
+                for binMask in binMasks:
+                    if ndim > 1:
+                        array = np.copy(flux)
+                        array[np.isfinite(array) & ~binMask] = 0
+                        subdomainMask = None
+                    else:
+                        array = flux[binMask]
+                        subdomainMask = subdomain[binMask]
+                    flux2D = pptools.remap(array, **remapvars_local, subdomain=subdomainMask)
+                    wmt.append(flux2D)
+                wmt = xr.concat(wmt, dim=binIndex) * 1e6   # 1e-6 Sv km-2
+                wmt.name = wmtName
         
         # Otherwise area-integrate flux over regions and bin using `numpy` 1d or 2d histograms
         else:
-            flux, wmt = flux * areaCell, []
-            for mask in regionMasks:
-                x = [fluxes[name][mask] for name in binNames]
-                h, _ = np.histogramdd(x, bins=edges, weights=flux[mask])
+            flux, wmt = (flux * areaCell).ravel(), []
+            arrays = [fluxes[name].ravel() for name in binNames]
+            for regionMask in regionMasks:
+                x = [array[regionMask] for array in arrays]
+                h, _ = np.histogramdd(x, bins=edges, weights=flux[regionMask])
                 wmt.append(h)
             wmt = np.array(wmt).squeeze() * 1e-6   # Sv
 
@@ -209,8 +233,8 @@ def calc_wmt(fluxes, coords, binNames, binArgs, remapvars=None, regions=None):
         
         # Build coordinates dict
         coordinates = {}
-        if regions is not None:
-            coordinates['regionNames'] = regions
+        if regionNames is not None:
+            coordinates['regionNames'] = regionNames
         for name, bn in zip(binNames, bins):
             coordinates[name + 'Bins'] = bn
     

@@ -7,16 +7,14 @@
     for the ImPACTS Water Mass Analysis project.
 """
 
-import numpy as np
-import xarray as xr
-import pandas as pd
 import os
 import time
-import yaml
-import pyremap
 from copy import deepcopy
+
+import numpy as np
+import pyremap
+import xarray as xr
 from scipy import signal
-import transecttools as trtools
 
 
 def loopstatus(k, n, starttime, interval=1):
@@ -60,30 +58,20 @@ def downsample(array, widths=(5, 5)):
     return array
 
 
-def build_savepath_from_file(filein, desc, timerange=None, outdir=''):
-    """Returns a `savepath` given a `filein`, `desc`, `timerange` and `outdir`.
+def rotate_velocities(u, v, angle):
+    """Rotate velocities
     """
     
-    # Parse filename
-    path, prefix = os.path.split(filein)
-    path = os.path.join(os.path.split(path)[0], outdir)
-    prefix, tstr = prefix.split('.')[:2]
-    mesh = prefix.split('_')[-1]
+    # Rotate velocity
+    cosa, sina = np.cos(angle), np.sin(angle)
+    u_rot = u * cosa - v * sina
+    v_rot = u * sina + v * cosa
     
-    # Parse tstr from timerange or filein
-    if timerange is not None:
-        tstr = '_'.join(date.strftime('%Y%m%d') for date in timerange)
-    else:
-        tstr = '_'.join(tstr.split('_')[-2:])
-    
-    # Build savepath
-    savepath = os.path.join(path, f'{prefix}.{desc}_{tstr}.nc')
-    
-    return savepath, mesh
+    return u_rot, v_rot
 
 
 def interpolate_to_edge(varCell, cellsOnEdge, subdomain):
-    """Interpolate cell variable to edge
+    """Interpolate cell variable to edge.
     """
     
     # Find cells on edge in subdomain
@@ -95,57 +83,35 @@ def interpolate_to_edge(varCell, cellsOnEdge, subdomain):
     return varEdge
 
 
-def load_coords(meshName, bbox=[-100, 40, 40, 85]):
-    """Load MPAS coordinates for various analyses
+def interpolate_along_axis(array, axis, direction):
+    """Interpolate array along axis. Direction `up` interpolates
+    T points toward U points. Direction `down` interpolates U
+    points toward T points. For POP meshes.
     """
     
-    # Get paths
-    with open(f'../yaml/paths_{meshName}.yaml') as f:
-        paths = yaml.safe_load(f)
-
-    # Load mask variables
-    with xr.open_dataset(paths['maskfile']) as ds:
-        coords = {
-            'regionNames': ds.regionNames.values.astype(str),
-            'regionCellMasks': ds.regionCellMasks.values,
-        }
-
-    # Load mesh variables
-    with xr.open_dataset(paths['meshfile']) as ds:
+    # Get indexing based on interpolation direction
+    n = array.shape[axis]
+    if direction == 'up':
+        idx, order = n - 1, -1
+    else:
+        idx, order = 0, 1
         
-        # Load lons and lats
-        names = ['lonCell', 'latCell', 'lonEdge', 'latEdge', 'lonVertex', 'latVertex']
-        for name in names:
-            coord = np.rad2deg(ds[name].values)
-            coords[name] = np.where(coord > 180, coord - 360, coord)
-
-        # Load remaining coords
-        names = [
-            'nCells', 'dvEdge', 'areaCell', 'refBottomDepth',
-            'cellsOnEdge', 'verticesOnEdge', 'edgesOnVertex',
-        ]
-        for name in names:
-            coord = ds[name].values
-            coords[name] = coord - 1 if 'On' in name else coord
-
-    # Get transect masks
-    transectMasks = trtools.get_transect_masks_from_regions(meshName, coords)
-
-    # Build subdomain
-    lon, lat = coords['lonCell'], coords['latCell']
-    subdomain, = np.where((lon > bbox[0]) & (lon < bbox[1]) & (lat > bbox[2]) & (lat < bbox[3]))
+    # Expand array across the boundary of the interpolation dimension
+    boundary = np.expand_dims(array.take(idx, axis), axis)
+    array = [boundary, array][slice(None, None, order)]
+    array = np.concatenate(array, axis)
     
-    # Apply subdomain to cell coords
-    coords.update({name: coords[name][subdomain, ...] for name in coords if 'Cell' in name})
+    # Interpolate linearly
+    array_interp = []
+    for start in [0, 1]:
+        array_interp.append(array.take(range(start, start + n), axis))
+    array_interp = sum(array_interp) / 2
     
-    # Convert regionCellMasks to bool
-    coords['regionCellMasks'] = coords['regionCellMasks'].astype(bool)
-    
-    return coords, transectMasks, subdomain
+    return array_interp
 
 
 def build_remapper(
-    meshfile, bbox=None,
+    meshfile, grid=None, subdomain=None, bbox=None,
     mapping_path='/global/cfs/cdirs/m4259/mapping_files/',
 ):
     """Build a `pyremap.Remapper` object for the requested mesh. Hardcoded
@@ -153,36 +119,56 @@ def build_remapper(
     a full domain dataset with the requested varnames initialized to zeros.
     """
     
-    # Parse mesh name from meshfile
-    meshName = meshfile.split('/')[-2]
-    
-    # Build remapper arguments
-    meshdescriptor = pyremap.MpasMeshDescriptor(meshfile, meshName)
-    lonlatdescriptor = pyremap.get_lat_lon_descriptor(dLon=0.5, dLat=0.5)
-    mappingfile = os.path.join(mapping_path, f'map_{meshName}_to_0.5x0.5degree_bilinear.nc')
-    
-    # Build zeros array to full domain size
-    with xr.open_dataset(meshfile) as ds:
-        zeros = np.zeros(len(ds.nCells))
+    # Build model-specific inDescriptors
+    if 'mpas' in meshfile:
+        meshName = meshfile.split('/')[-2]
+        inDescriptor = pyremap.MpasMeshDescriptor(meshfile, meshName)
+    elif 'pop' in meshfile:
+        meshName = 'gx1v6' + grid
+        inDescriptor = pyremap.LatLon2DGridDescriptor.read(
+            meshfile,
+            latVarName=grid + 'LAT',
+            lonVarName=grid + 'LONG',
+            regional=False,
+        )
+    else:
+        raise ValueError('No string mpas or pop found in: {meshfile}')
+
+    # Build outDescriptor and define mappingfile path
+    outDescriptor = pyremap.get_lat_lon_descriptor(dLon=0.5, dLat=0.5)
+    mappingfile = f'map_{meshName}_to_{outDescriptor.meshName}_bilinear.nc'
+    mappingfile = os.path.join(mapping_path, mappingfile)
+    remapper = pyremap.Remapper(inDescriptor, outDescriptor, mappingfile)
 
     # Define remap variables as dict
-    remapvars = {
-        'da_full': xr.DataArray(zeros, dims='nCells'),
-        'remapper': pyremap.Remapper(meshdescriptor, lonlatdescriptor, mappingfile),
-        'bbox': bbox,
-    }
+    remapvars = {'remapper': remapper}
     
+    # Add bbox
+    if bbox is not None:
+        remapvars['bbox'] = bbox
+    
+    # Add subdomain
+    if 'mpas' in meshfile and subdomain is not None:
+        with xr.open_dataset(meshfile) as ds:
+            da_full = xr.DataArray(np.zeros(ds.sizes['nCells']), dims='nCells')
+        remapvars.update({'da_full': da_full, 'subdomain': subdomain})
+
     return remapvars
 
 
-def remap(array_in, nCells, da_full, remapper, bbox=None):
+def remap(array_in, remapper, bbox=None, da_full=None, subdomain=None):
     """Remap `da_in` to lonlat using `remapper` object. `da_in` is on a
     subdomain so it must be populated into `da_full` before remapping
     """
     
+    # Build input as xarray.Dataarray
+    if subdomain is not None:
+        da_in = deepcopy(da_full)
+        da_in.loc[subdomain] = array_in
+    else:
+        da_in = xr.DataArray(array_in, dims=['nlat', 'nlon'])
+    
     # Remap to lonlat
-    da_in = deepcopy(da_full)
-    da_in.loc[nCells] = array_in
     da_out = remapper.remap(da_in)
     if bbox is not None:
         da_out = da_out.sel(lon=slice(*bbox[:2]), lat=slice(*bbox[2:]))
