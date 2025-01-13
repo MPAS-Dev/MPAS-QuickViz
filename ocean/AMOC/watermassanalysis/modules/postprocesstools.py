@@ -42,7 +42,7 @@ def lowpass(data, cutoff=10, window_type='boxcar'):
     return filtered
 
 
-def downsample(array, widths=(5, 5)):
+def downsample(array, widths=(5, 5), func='mean'):
     """Downsample array using a groupby mean every w elements.
     Pads the array dimensions with nan so that `numpy.reshape` can be used
     in the groupby operation.
@@ -53,7 +53,7 @@ def downsample(array, widths=(5, 5)):
     array = np.pad(array, pad, constant_values=np.nan)
     args = [arg for dim, w in zip(array.shape, widths) for arg in (int(dim/w), w)]
     axis = tuple(i for i, e in enumerate(args) if e in widths)
-    array = np.nanmean(array.reshape(*args), axis=axis)
+    array = getattr(np, 'nan' + func)(array.reshape(*args), axis=axis)
     
     return array
 

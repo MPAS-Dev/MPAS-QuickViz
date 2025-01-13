@@ -38,15 +38,17 @@ def define_args():
     return parser.parse_args()
 
 
-def build_coords_filename(params, meshName, fileType='mesh'):
+def build_coords_filename(params, meshName=None, fileType='mesh'):
     """Build mesh or mask filename
     """
     
     # Build coordinates filename
     filepath, filename = params[f'{fileType}Path'], params[f'{fileType}File']
+    meshNameFull = params['meshName']
+    if meshName is not None:
+        filename, meshNameFull = filename[meshName], meshNameFull[meshName]
     if fileType == 'mesh':
-        filepath = os.path.join(filepath, params[f'{fileType}Name'][meshName])
-    filename = filename[meshName]
+        filepath = os.path.join(filepath, meshNameFull)
     filename = os.path.join(filepath, filename)
     
     return filename
@@ -61,9 +63,13 @@ def build_results_filename(filenumber, params, meshName, startyear=1948):
     simName, prefix, resultsPath = [params[key] for key in keys]
 
     # Apply meshName to params
-    meshStr = '18to6v3' if meshName == 'HR' else '60to30E2r2'
-    resultsPath = resultsPath[meshName]
-    simName = f'{simName}_{meshStr}'
+    if meshName in ['LR', 'HR']:
+        meshStr = '18to6v3' if meshName == 'HR' else '60to30E2r2'
+        resultsPath = resultsPath[meshName]
+        simName = f'{simName}_{meshStr}'
+    elif meshName in ['v2', 'v2_1']:
+        resultsPath = os.path.join(resultsPath, f'{meshName}Extension')
+        simName = f'{meshName}.{simName}'
     
     # Parse dates from filenumber
     year, month = filenumber // 12 + 1, filenumber % 12 + 1
@@ -122,13 +128,13 @@ def build_remapper(
     return remapvars
 
 
-def load_coords(meshName, savepath='./', bbox=[-100, 40, 0, 85]):
+def load_coords(meshName=None, savepath='./', bbox=[-100, 40, 0, 85]):
     """Get coordinates and mask variables need for WMT calculations
     as xarray.Dataset
     """
     
     # Load parameters.yaml
-    with open('parameters.yaml') as f:
+    with open('parameters-v2PiControl.yaml') as f:
         params = yaml.safe_load(f)
 
     # Get meshFile and maskFile names
@@ -170,35 +176,41 @@ def load_coords(meshName, savepath='./', bbox=[-100, 40, 0, 85]):
     # Convert regionCellMasks to bool
     coords['regionCellMasks'] = coords.regionCellMasks.astype(bool)
     
+    return coords
+    
     # Save to netCDF
     coords.to_netcdf(os.path.join(savepath, f'{meshName}_coords.nc'))
     
     return coords
 
 
-def process_monthly_file(filenumber, meshName, savepath='./', bbox=[-100, 40, 0, 85]):
+def process_monthly_file(filenumber, meshName, coords, savepath='./', bbox=[-100, 40, 0, 85]):
     """Calculate surface WMT for a monthly MPAS results file
     """
     
     # Sigmabin kwargs
-    binArgs = (26.5, 28.2, 0.01)
+    binArgs = (21.9, 28.11, 0.01)
     
     # Load parameters.yaml
-    with open('parameters.yaml') as f:
+    with open('parameters-v2PiControl.yaml') as f:
         params = yaml.safe_load(f)
         
     # Load coords file
-    coords = xr.open_dataset(os.path.join(savepath, f'{meshName}_coords.nc'))
+    #coords = xr.open_dataset(os.path.join(savepath, f'{meshName}_coords.nc'))
     regionNames, subdomain = [coords[name].values for name in ('regionNames', 'nCells')]
     
     # Get remapvars
-    meshFile = build_coords_filename(params['run'], meshName)
-    remapvars = build_remapper(meshFile, subdomain, bbox)
+    #meshFile = build_coords_filename(params['run'], meshName)
+    #remapvars = build_remapper(meshFile, subdomain, bbox)
 
     # Open results and load fluxes
     filename, datestamp, datecode = build_results_filename(filenumber, params['run'], meshName)
     with xr.open_dataset(filename) as ds:
         fluxes = wmttools.build_fluxes(ds, params['fluxes'], subdomain=subdomain)
+    
+    # Diagnostic output
+    ds = wmttools.calc_wmt(fluxes, coords, 'density', binArgs, regionNames=regionNames)
+    return ds
 
     # Calculate water mass transformation and save output to netCDF
     kwargsDict = {

@@ -32,20 +32,24 @@ coordinates:
 # -------------------------------------------------------------------------------------------------------------
 variables:
   cell2D:
-    barotropicStreamFunction : [BSF     , 1   ]     # Diagnostic barotropic streamfunction ---- [Sv]
-    seaSurfaceHeight         : [SSH     , 0.01]     # Sea surface height ---------------------- [cm]
-    mixedLayerDepth          : [HMXL_DR , 0.01]     # Mixed layer depth (density) ------------- [cm]
+    barotropicStreamFunction : [BSF     , 1   ]     # Diagnostic barotropic streamfunction ------- [Sv]
+    seaSurfaceHeight         : [SSH     , 0.01]     # Sea surface height ------------------------- [cm]
+    mixedLayerDepth          : [HMXL_DR , 0.01]     # Mixed layer depth (density) ---------------- [cm]
   cell3D:
-    density                  : [PD      , 1000]     # Potential density ref to surface -------- [g cm-3]
-    temperature              : [TEMP    , 1   ]     # Potential temperature ------------------- [deg C]
-    salinity                 : [SALT    , 1   ]     # Salinity -------------------------------- [PSU]
+    density                  : [PD      , 1000]     # Potential density ref to surface ----------- [g cm-3]
+    temperature              : [TEMP    , 1   ]     # Potential temperature ---------------------- [deg C]
+    salinity                 : [SALT    , 1   ]     # Salinity ----------------------------------- [PSU]
   edge3D:
-    uVelocityResolved        : [UVEL    , 0.01]     # Velocity in grid-x direction ------------ [cm s-1]
-    vVelocityResolved        : [VVEL    , 0.01]     # Velocity in grid-y direction ------------ [cm s-1]
-    uVelocityGM              : [UISOP   , 0.01]     # Bolus velocity in grid-x direction ------ [cm s-1]
-    vVelocityGM              : [VISOP   , 0.01]     # Bolus velocity in grid-y direction ------ [cm s-1]
-    uVelocitySubmeso         : [USUBM   , 0.01]     # Submeso velocity in grid-x direction ---- [cm s-1]
-    vVelocitySubmeso         : [VSUBM   , 0.01]     # Submeso velocity in grid-y direction ---- [cm s-1]
+    uVelocityResolved        : [UVEL    , 0.01]     # Velocity in grid-x direction --------------- [cm s-1]
+    vVelocityResolved        : [VVEL    , 0.01]     # Velocity in grid-y direction --------------- [cm s-1]
+    uVelocityGM              : [UISOP   , 0.01]     # Bolus velocity in grid-x direction --------- [cm s-1]
+    vVelocityGM              : [VISOP   , 0.01]     # Bolus velocity in grid-y direction --------- [cm s-1]
+    uVelocitySubmeso         : [USUBM   , 0.01]     # Submeso velocity in grid-x direction ------- [cm s-1]
+    vVelocitySubmeso         : [VSUBM   , 0.01]     # Submeso velocity in grid-y direction ------- [cm s-1]
+  meridional:
+    moc                      : [MOC     , 1   ]     # MOC streamfunction by region and component - [Sv]
+  seaice:
+    iceFraction              : [IFRAC   , 1   ]     # Sea ice cell area fraction ----------------- []
 
 # ---------- Flux names ---------------------------------------------------------------------------------------
 # -------------------------------------------------------------------------------------------------------------

@@ -56,7 +56,7 @@ def build_coords_filename(params, meshName=None, fileType='mesh'):
     return filename
 
 
-def build_results_filename(filenumber, params, meshName=None, startyear=1948):
+def build_results_filenames(filenumber, params, meshName=None, startyear=1948):
     """Build results filename and dates from filenumber
     """
     
@@ -90,11 +90,108 @@ def build_results_filename(filenumber, params, meshName=None, startyear=1948):
             )
             raise ValueError(msg)
 
-    # Build filename
-    filename = '.'.join([simName, prefix, datecode, 'nc'])
-    filename = os.path.join(resultsPath, filename)
+    # Build filenames
+    filenames = {}
+    for ctgy in ['ocean', 'seaice']:
+        filename = '.'.join([simName, params[ctgy + 'Name'], prefix, datecode, 'nc'])
+        filenames[ctgy] = os.path.join(resultsPath, filename)
     
-    return filename, [datestamp, datecode]
+    return filenames, [datestamp, datecode]
+
+
+def load_coords_from_file(filename, params):
+    """Load coordinate variables from file
+    """
+    
+    # Load coordinate variables from file
+    coords = {}
+    with xr.open_dataset(filename) as ds:
+        for name, fields in params.items():
+            coord = ds[fields[1]].values
+            if fields[2] == 'deg':
+                coord = np.rad2deg(coord)
+            else:
+                coord = coord * fields[2]
+            if 'lon' in name:
+                coord = np.where(coord > 180, coord - 360, coord)
+            if 'On' in name:
+                coord = coord - 1
+            coords[name] = (fields[0], coord)
+    
+    return coords
+
+
+def load_coords(meshName, savepath='./', bbox=[-100, 45, 30, 85]):
+    """Load MPAS coordinates for various analyses
+    """
+    
+    # Parse model from meshName
+    model = 'POP' if meshName == 'POP' else 'MPAS'
+    
+    # Load YAML params
+    filename = os.path.join(pkgroot, 'yaml', f'parameters_{model}.yaml')
+    with open(filename, 'r') as f:
+        params = yaml.safe_load(f)
+
+    # Initialize coords as list
+    coords = {}
+
+    # Load regionCellMasks and trim to regions defined in params
+    filename = build_coords_filename(params['run'], meshName=meshName, fileType='mask')
+    with xr.open_dataset(filename) as ds:
+        coord = ds.regionCellMasks
+        if 'regionNames' not in coord.dims:
+            coord.coords['regionNames'] = ds.regionNames.astype(str)
+            coord = coord.swap_dims({'nRegions': 'regionNames'})
+        regionNames = np.array(list(params['transects'].keys()))
+        coords['regionCellMasks'] = coord.sel(regionNames=regionNames)
+
+    # Load mesh variables
+    filename = build_coords_filename(params['run'], meshName=meshName)
+    coords = coords | load_coords_from_file(filename, params['coordinates']['standard'])
+    
+    # Load coordinate variables directly from results file
+    if 'results' in params['coordinates']:
+        filenames, _ = build_results_filenames(0, params['run'], meshName=meshName)
+        coords = coords | load_coords_from_file(filenames['ocean'], params['coordinates']['results'])
+
+    # Merge coordinate arrays into xr.Dataset
+    coords = xr.Dataset(coords)
+
+    # MPAS specific coords
+    if model == 'MPAS':
+        
+        # Get transect coordinates
+        transects = trtools.get_transect_masks_from_regions(params['transects'], coords, meshName)
+        
+        # Build and apply subdomain
+        lons, lats = coords.lonCell, coords.latCell
+        subdomain, = np.where(
+            (lons > bbox[0]) & (lons < bbox[1]) &
+            (lats > bbox[2]) & (lats < bbox[3])
+        )
+        coords = coords.isel(nCells=subdomain)
+    
+    # POP specific coords
+    elif model == 'POP':
+        
+        # Get transect coordinates
+        transects = trtools.get_transect_masks_from_regions_POP(params['transects'], coords)
+
+    # Convert regionCellMasks to bool and merge coords and transects
+    coords['regionCellMasks'] = coords.regionCellMasks.astype(bool)
+    coords = xr.merge([coords] + list(transects.values()))
+    
+    # Set Dataset attributes
+    meshNameFull = params['run']['meshName']
+    if not isinstance(meshNameFull, str):
+        meshNameFull = meshNameFull[meshName]
+    coords.attrs['model'] = model
+    coords.attrs['meshName'] = meshName
+    coords.attrs['meshNameFull'] = meshNameFull
+    
+    # Save to netCDF
+    coords.to_netcdf(os.path.join(savepath, f'{meshName}_coords.nc'))
 
 
 def load_variables(ds, params, coords, depths, prefix='timeMonthly_avg_'):
@@ -105,7 +202,7 @@ def load_variables(ds, params, coords, depths, prefix='timeMonthly_avg_'):
     kidx = [abs(coords.refBottomDepth.values - depth).argmin() for depth in depths]
     
     # Initialize data dict
-    data = {ctgy: {} for ctgy in ['2D', '3D', 'region', 'transect']}
+    data = {ctgy: {} for ctgy in ['2D', '3D', 'region', 'transect', 'meridional']}
     
     # Get layer thickness from coords
     if coords.model == 'POP':
@@ -113,7 +210,7 @@ def load_variables(ds, params, coords, depths, prefix='timeMonthly_avg_'):
         bottomDepth = np.cumsum(layerThickness, axis=0)
         data['3D']['volume'] = layerThickness * coords.areaCell.values[None, ...] * 1e-9
     
-    # Loop through varTypes (cell2D, cell3D, edge3D)
+    # Loop through varTypes (cell2D, cell3D, edge3D, meridional, seaice)
     for varType in params:
     
         # Loop through varNames
@@ -124,11 +221,17 @@ def load_variables(ds, params, coords, depths, prefix='timeMonthly_avg_'):
             conversion = varDefs[1]
 
             # Skip variable if not in dataset (e.g. GM, salinityRestoring)
-            if varNameFull not in ds:
+            if varNameFull not in ds['ocean'] and varNameFull not in ds['seaice']:
                 continue
 
             # Load into numpy
-            array = ds[varNameFull][0, ...].values * conversion
+            key = 'seaice' if varType == 'seaice' else 'ocean'
+            array = ds[key][varNameFull][0, ...].values * conversion
+            
+            # Get MOC and bypass remaining
+            if varType == 'meridional':
+                data['meridional'][varName] = array[0, ...].T
+                continue
             
             # Apply subdomain in MPAS
             if coords.model == 'MPAS' and varType != 'edge3D':
@@ -363,10 +466,14 @@ def build_output_datasets(data, coords, binArgs, depths, remapvars, datestrings,
     ds.expand_dims({'time': [datestamp]}).to_netcdf(filename, unlimited_dims='time')
     
     # Save transect fields
-    coordinates = coords[[coord for coord in coords if 'Transect' in coord]]
-    dims = ['transectNames', 'nTransectEdges', 'nVertLevels']
+    names = ['latMOC', 'refBottomDepth'] + [coord for coord in coords if 'Transect' in coord]
+    coordinates = coords[names]
     variables = {}
+    dims = ['transectNames', 'nTransectEdges', 'refBottomDepth']
     for key, values in data['transect'].items():
+        variables[key] = (dims, np.array(values))
+    dims = ['latMOC', 'refBottomDepth']
+    for key, values in data['meridional'].items():
         variables[key] = (dims, np.array(values))
     ds = xr.Dataset(variables, coordinates)
     filename = os.path.join(savepath, f'{coords.meshName}_transect_{datecode}.nc')
@@ -376,85 +483,6 @@ def build_output_datasets(data, coords, binArgs, depths, remapvars, datestrings,
     for ctgy, ds in data['wmt']['2D'].items():
         filename = os.path.join(savepath, f'{coords.meshName}_2D_{ctgy}_{datecode}.nc')
         ds.expand_dims({'time': [datestamp]}).to_netcdf(filename, unlimited_dims='time')
-
-
-def load_coords(meshName, savepath='./', bbox=[-100, 40, 40, 85]):
-    """Load MPAS coordinates for various analyses
-    """
-    
-    # Parse model from meshName
-    model = 'POP' if meshName == 'POP' else 'MPAS'
-    
-    # Load YAML params
-    filename = os.path.join(pkgroot, 'yaml', f'parameters_{model}.yaml')
-    with open(filename, 'r') as f:
-        params = yaml.safe_load(f)
-
-    # Initialize coords as list
-    coords = {}
-
-    # Load regionCellMasks and trim to regions defined in params
-    filename = build_coords_filename(params['run'], meshName=meshName, fileType='mask')
-    with xr.open_dataset(filename) as ds:
-        coord = ds.regionCellMasks
-        if 'regionNames' not in coord.dims:
-            coord.coords['regionNames'] = ds.regionNames.astype(str)
-            coord = coord.swap_dims({'nRegions': 'regionNames'})
-        regionNames = np.array(list(params['transects'].keys()))
-        coords['regionCellMasks'] = coord.sel(regionNames=regionNames)
-
-    # Load mesh variables
-    filename = build_coords_filename(params['run'], meshName=meshName)
-    with xr.open_dataset(filename) as ds:
-        for name, fields in params['coordinates'].items():
-            coord = ds[fields[1]].values
-            if fields[2] == 'deg':
-                coord = np.rad2deg(coord)
-            else:
-                coord = coord * fields[2]
-            if 'lon' in name:
-                coord = np.where(coord > 180, coord - 360, coord)
-            if 'On' in name:
-                coord = coord - 1
-            coords[name] = (fields[0], coord)
-
-    # Merge coordinate arrays into xr.Dataset
-    coords = xr.Dataset(coords)
-
-    # MPAS specific coords
-    if model == 'MPAS':
-        
-        # Get transect coordinates
-        transects = trtools.get_transect_masks_from_regions(params['transects'], coords, meshName)
-        
-        # Build and apply subdomain
-        lons, lats = coords.lonCell, coords.latCell
-        subdomain, = np.where(
-            (lons > bbox[0]) & (lons < bbox[1]) &
-            (lats > bbox[2]) & (lats < bbox[3])
-        )
-        coords = coords.isel(nCells=subdomain)
-    
-    # POP specific coords
-    elif model == 'POP':
-        
-        # Get transect coordinates
-        transects = trtools.get_transect_masks_from_regions_POP(params['transects'], coords)
-
-    # Convert regionCellMasks to bool and merge coords and transects
-    coords['regionCellMasks'] = coords.regionCellMasks.astype(bool)
-    coords = xr.merge([coords] + list(transects.values()))
-    
-    # Set Dataset attributes
-    meshNameFull = params['run']['meshName']
-    if not isinstance(meshNameFull, str):
-        meshNameFull = meshNameFull[meshName]
-    coords.attrs['model'] = model
-    coords.attrs['meshName'] = meshName
-    coords.attrs['meshNameFull'] = meshNameFull
-    
-    # Save to netCDF
-    coords.to_netcdf(os.path.join(savepath, f'{meshName}_coords.nc'))
 
     
 def process_monthly_file(meshName, filenumber, savepath='./'):
@@ -486,15 +514,15 @@ def process_monthly_file(meshName, filenumber, savepath='./'):
     # Build remapping variables
     filename = build_coords_filename(params['run'], meshName=meshName)
     remapvars = pptools.build_remapper(
-        filename, grid=grid, subdomain=subdomain, bbox=[-100, 40, 40, 85],
+        filename, grid=grid, subdomain=subdomain, bbox=[-100, 45, 30, 85],
     )
 
     # Open results file, load and bin variables, get fluxes and calc wmt
-    filename, datestrings = build_results_filename(filenumber, params['run'], meshName=meshName)
-    ds = xr.open_dataset(filename)
+    filenames, datestrings = build_results_filenames(filenumber, params['run'], meshName=meshName)
+    ds = {name: xr.open_dataset(filename) for name, filename in filenames.items()}
     data = load_variables(ds, params['variables'], coords, depths, prefix=varPrefix)
     data['1D'] = bin_variables(data, binArgs, coords)
-    fluxes = wmttools.build_fluxes(ds, params['fluxes'], subdomain=subdomain, zdim=zdim, prefix=varPrefix)
+    fluxes = wmttools.build_fluxes(ds['ocean'], params['fluxes'], subdomain=subdomain, zdim=zdim, prefix=varPrefix)
     data['wmt'] = calc_wmt(fluxes, coords, binArgs, remapvars)
     exclude = [fluxes.pop(key) for key in ('temperature', 'salinity', 'density')]
     data['2D'].update(fluxes)
@@ -509,4 +537,3 @@ if __name__ == "__main__":
         load_coords(args.meshname, args.path)
     else:
         process_monthly_file(args.meshname, args.filenumber, args.path)
-        
