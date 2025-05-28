@@ -1,0 +1,142 @@
+# Postprocessing and water mass analysis parameters file for MPAS CORE-II G-cases
+# 
+#
+# ---------- Run details --------------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------------------------------
+run:
+  model: MPAS
+  simName: 20210421_sim7_CORE
+  prefix: hist.am.timeSeriesStatsMonthly
+  oceanName: mpaso
+  seaiceName: mpassi
+  meshPath: /global/cfs/cdirs/e3sm/inputdata/ocn/mpas-o
+  maskPath: /pscratch/sd/b/bmoorema/maskfiles
+  meshName:
+    LR: EC30to60E2r2
+    HR: oRRS18to6v3
+  resultsPath:
+    LR: /pscratch/sd/b/bmoorema/run_001_062
+    HR: [/global/cfs/cdirs/m4259/lvroekel, [run_001_010, run_011_020, run_051_060]]
+  meshFile:
+    LR: ocean.EC30to60E2r2.210210.nc
+    HR: oRRS18to6v3.171116.nc
+  maskFile:
+    LR: EC30to60E2r2_transformationbudgetmasks20240724.nc
+    HR: oRRS18to6v3_transformationbudgetmasks20240724.nc
+
+# ---------- Coordinate names ---------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------------------------------
+coordinates:
+  standard:
+    lonCell          : [nCells             , lonCell            , deg]  # Cell center longitude ----------- [rad]
+    latCell          : [nCells             , latCell            , deg]  # Cell center latitude ------------ [rad]
+    lonEdge          : [nEdges             , lonEdge            , deg]  # Edge midpoint longitude --------- [rad]
+    latEdge          : [nEdges             , latEdge            , deg]  # Edge midpoint latitude ---------- [rad]
+    lonVertex        : [nVertices          , lonVertex          , deg]  # Vertex longitude ---------------- [rad]
+    latVertex        : [nVertices          , latVertex          , deg]  # Vertex latitude ----------------- [rad]
+    dvEdge           : [nEdges             , dvEdge             , 1  ]  # Edge length --------------------- [m]
+    areaCell         : [nCells             , areaCell           , 1  ]  # Primary grid cell area ---------- [m2]
+    refBottomDepth   : [nVertLevels        , refBottomDepth     , 1  ]  # Vertical level bottom depth ----- [m]
+    nCells           : [nCells             , nCells             , 1  ]  # Cell index ---------------------- [0 start]
+    cellsOnEdge      : [[nEdges, TWO]      , cellsOnEdge        , 1  ]  # Cells that straddle each edge --- [1 start]
+    verticesOnEdge   : [[nEdges, TWO]      , verticesOnEdge     , 1  ]  # Vertices at each edge end ------- [1 start]
+    edgesOnVertex    : [[nVertices, THREE] , edgesOnVertex      , 1  ]  # Edges that share a vertex ------- [1 start]
+  results:
+    latMOC           : [nMOCBins , binBoundaryMocStreamfunction , deg]  # MOC latitude -------------------- [rad]
+
+# ---------- Variable names -----------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------------------------------
+variables:
+  cell2D:
+    seaSurfaceHeight           : [ssh                             , 1]  # Sea surface height -------------- [m]
+    mixedLayerDepth            : [dThreshMLD                      , 1]  # Mixed layer depth (density) ----- [m]
+  cell3D:
+    layerThickness             : [layerThickness                  , 1]  # Layer thickness ----------------- [m]
+    density                    : [potentialDensity                , 1]  # Potential density --------------- [kg m-3]
+    temperature                : [activeTracers_temperature       , 1]  # Potential temperature ----------- [deg C]
+    salinity                   : [activeTracers_salinity          , 1]  # Salinity ------------------------ [PSU]
+    velocityZonalResolved      : [velocityZonal                   , 1]  # Eastward horizontal velocity ---- [m s-1]
+    velocityMeridionalResolved : [velocityMeridional              , 1]  # Northward horizontal velocity --- [m s-1]
+    velocityZonalGM            : [GMBolusVelocityZonal            , 1]  # Zonal GM bolus velocity --------- [m s-1]
+    velocityMeridionalGM       : [GMBolusVelocityMeridional       , 1]  # Meridional GM bolus velocity ---- [m s-1]
+  edge3D:
+    velocityNormalResolved     : [normalVelocity                  , 1]  # Horz. velocity (normal edge) ---- [m s-1]
+    velocityNormalGM           : [normalGMBolusVelocity           , 1]  # Horz. GM velocity (normal edge) - [m s-1]
+  meridional:
+    mocResolved                : [mocStreamvalLatAndDepthRegion   , 1]  # MOC streamfunction by region ---- [Sv]
+    mocGM                      : [mocStreamvalLatAndDepthRegionGM , 1]  # MOC GM streamfunction by region - [Sv]
+  seaice:
+    iceFraction                : [iceAreaCell                     , 1]  # Sea ice cell area fraction ------ []
+
+# ---------- Flux names ---------------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------------------------------
+fluxes:
+  temperature                  : activeTracers_temperature              # Potential temperature ----------- [deg C]
+  salinity                     : activeTracers_salinity                 # Salinity ------------------------ [PSU]
+  totalHeatFlux:
+    shortWave                  : shortWaveHeatFlux                      # Short wave radiation flux ------- [W m-2]
+    longWaveUp                 : longWaveHeatFluxUp                     # Upward long wave heat flux ------ [W m-2]
+    longWaveDown               : longWaveHeatFluxDown                   # Downward long wave heat flux ---- [W m-2]
+    latent                     : latentHeatFlux                         # Latent heat flux ---------------- [W m-2]
+    sensible                   : sensibleHeatFlux                       # Sensible heat flux -------------- [W m-2]
+    seaIceHeat                 : seaIceHeatFlux                         # Sea ice heat flux --------------- [W m-2]
+  totalFreshFlux:
+    evaporation                : evaporationFlux                        # Evaporation flux ---------------- [kg m-2 s-1]
+    rain                       : rainFlux                               # FW flux from rain --------------- [kg m-2 s-1]
+    snow                       : snowFlux                               # FW flux from snow --------------- [kg m-2 s-1]
+    riverRunoff                : riverRunoffFlux                        # FW flux from river runoff ------- [kg m-2 s-1]
+    iceRunoff                  : iceRunoffFlux                          # FW flux from ice runoff --------- [kg m-2 s-1]
+    seaIceFW                   : seaIceFreshWaterFlux                   # FW flux from sea ice ------------ [kg m-2 s-1]
+  totalSaltFlux:
+    seaIceSalinity             : seaIceSalinityFlux                     # Salinity flux from sea ice ------ [kg SALT m-2 s-1]
+  totalSalinityFlux:
+    salinityRestoring          : salinitySurfaceRestoringTendency       # Salinity restoring tendency ----- [PSU m s-1]
+
+# ---------- Transect definitions -----------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------------------------------
+transects:
+  Labrador Sea:
+    transectNames: [OSNAP West, Davis Strait, Hudson Bay]
+    signChanges: [1, -1, -1]
+    orders:
+      LR: [-1, -1, 1]
+      HR: [1, 1, 1, -1, 1]
+    sections:
+      LR: [0, 1, 2]
+      HR: [0, 1, [4, 3, 2]]
+  Irminger-Iceland Basins:
+    transectNames: [OSNAP East, Denmark Strait, Iceland-Faroe Ridge]
+    signChanges: [1, -1, -1]
+    orders:
+      LR: [1, -1, 1]
+      HR: [-1, 1, -1, 1, 1, 1]
+    sections:
+      LR: [0, 1, 2]
+      HR: [[0, 1], 5, [3, 2, 4]]
+  Nordic Seas:
+    transectNames: [Denmark Strait, Iceland-Faroe Ridge, Fram Strait, Barents Sea, North Sea]
+    signChanges: [1, 1, -1, -1, -1]
+    orders:
+      LR: [1, 1, -1, -1, 1, -1]
+      HR: [1, 1, 1, 1, -1, 1, 1, 1, 1]
+    sections:
+      LR: [3, 4, 5, [0, 1], 2]
+      HR: [7, [5, 4, 6], 0, [8, 1], [2, 3]]
+  Irminger Sea:
+    transectNames: [OSNAP East-Reykjanes, Denmark Strait]
+    signChanges: [1, -1]
+    orders:
+      LR: [1, -1]
+      HR: [1, 1]
+    sections:
+      LR: [0, 1]
+      HR: [0, 1]
+  Iceland-Rockall:
+    transectNames: [Reykjanes-OSNAP East, Iceland-Faroe Ridge]
+    signChanges: [1, -1]
+    orders:
+      LR: [-1, 1]
+      HR: [-1, 1, -1, 1, 1]
+    sections:
+      LR: [0, 1]
+      HR: [[0, 1], [3, 2, 4]]
