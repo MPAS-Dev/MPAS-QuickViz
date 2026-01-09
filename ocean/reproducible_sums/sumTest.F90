@@ -5,14 +5,14 @@
 ! \brief  This is a test driver for reproducible sum algorithms. It
 !         tests global sum for multiple data types and array dimensions.
 !         Compile and run with, e.g. 
-!            mpif90 mpas_globalSumMod.F sumTest.F90 -fno-range-check -ffree-form
+!            mpif90 mpas_global_sum_mod.F sumTest.F90 -fno-range-check -ffree-form
 !            mpirun -n 36 a.out
 !
 !***********************************************************************
 
 program sumTest
 
-   use mpas_globalSumMod
+   use mpas_global_sum_mod
 
    implicit none
 
@@ -159,10 +159,10 @@ program sumTest
       iref = iref + r
       lref = lref + r
    end do
-   dsum1 = mpas_globalSum(dscalar, MPI_COMM_WORLD)
-   rsum1 = mpas_globalSum(rscalar, MPI_COMM_WORLD)
-   isum1 = mpas_globalSum(iscalar, MPI_COMM_WORLD)
-   lsum1 = mpas_globalSum(lscalar, MPI_COMM_WORLD)
+   dsum1 = mpas_global_sum(dscalar, MPI_COMM_WORLD)
+   rsum1 = mpas_global_sum(rscalar, MPI_COMM_WORLD)
+   isum1 = mpas_global_sum(iscalar, MPI_COMM_WORLD)
+   lsum1 = mpas_global_sum(lscalar, MPI_COMM_WORLD)
    if (dsum1 == dref) then
       print *, 'Global sum scalar double: PASS'
    else
@@ -228,22 +228,22 @@ program sumTest
    rref2 = dref2
    iref  = lref
    iref2 = lref2
-   dsum1 = mpas_globalSum(darray1d, MPI_COMM_WORLD)
-   rsum1 = mpas_globalSum(rarray1d, MPI_COMM_WORLD)
-   isum1 = mpas_globalSum(iarray1d, MPI_COMM_WORLD)
-   lsum1 = mpas_globalSum(larray1d, MPI_COMM_WORLD)
-   dsum2 = mpas_globalSum(darray1d, MPI_COMM_WORLD, indxRange)
-   rsum2 = mpas_globalSum(rarray1d, MPI_COMM_WORLD, indxRange)
-   isum2 = mpas_globalSum(iarray1d, MPI_COMM_WORLD, indxRange)
-   lsum2 = mpas_globalSum(larray1d, MPI_COMM_WORLD, indxRange)
-   dsum3 = mpas_globalSum(darray1d, dmask1d, MPI_COMM_WORLD)
-   rsum3 = mpas_globalSum(rarray1d, rmask1d, MPI_COMM_WORLD)
-   isum3 = mpas_globalSum(iarray1d, imask1d, MPI_COMM_WORLD)
-   lsum3 = mpas_globalSum(larray1d, lmask1d, MPI_COMM_WORLD)
-   dsum4 = mpas_globalSum(darray1d, dmask1d, MPI_COMM_WORLD, indxRange)
-   rsum4 = mpas_globalSum(rarray1d, rmask1d, MPI_COMM_WORLD, indxRange)
-   isum4 = mpas_globalSum(iarray1d, imask1d, MPI_COMM_WORLD, indxRange)
-   lsum4 = mpas_globalSum(larray1d, lmask1d, MPI_COMM_WORLD, indxRange)
+   dsum1 = mpas_global_sum(darray1d, MPI_COMM_WORLD)
+   rsum1 = mpas_global_sum(rarray1d, MPI_COMM_WORLD)
+   isum1 = mpas_global_sum(iarray1d, MPI_COMM_WORLD)
+   lsum1 = mpas_global_sum(larray1d, MPI_COMM_WORLD)
+   dsum2 = mpas_global_sum(darray1d, MPI_COMM_WORLD, indxRange)
+   rsum2 = mpas_global_sum(rarray1d, MPI_COMM_WORLD, indxRange)
+   isum2 = mpas_global_sum(iarray1d, MPI_COMM_WORLD, indxRange)
+   lsum2 = mpas_global_sum(larray1d, MPI_COMM_WORLD, indxRange)
+   dsum3 = mpas_global_sum(darray1d, dmask1d, MPI_COMM_WORLD)
+   rsum3 = mpas_global_sum(rarray1d, rmask1d, MPI_COMM_WORLD)
+   isum3 = mpas_global_sum(iarray1d, imask1d, MPI_COMM_WORLD)
+   lsum3 = mpas_global_sum(larray1d, lmask1d, MPI_COMM_WORLD)
+   dsum4 = mpas_global_sum(darray1d, dmask1d, MPI_COMM_WORLD, indxRange)
+   rsum4 = mpas_global_sum(rarray1d, rmask1d, MPI_COMM_WORLD, indxRange)
+   isum4 = mpas_global_sum(iarray1d, imask1d, MPI_COMM_WORLD, indxRange)
+   lsum4 = mpas_global_sum(larray1d, lmask1d, MPI_COMM_WORLD, indxRange)
    if (dsum1 == dref) then
       print *, 'Global sum array1d double: PASS'
    else
@@ -374,22 +374,22 @@ program sumTest
    rref2 = dref2
    iref  = lref
    iref2 = lref2
-   dsum1 = mpas_globalSum(darray2d, MPI_COMM_WORLD)
-   rsum1 = mpas_globalSum(rarray2d, MPI_COMM_WORLD)
-   isum1 = mpas_globalSum(iarray2d, MPI_COMM_WORLD)
-   lsum1 = mpas_globalSum(larray2d, MPI_COMM_WORLD)
-   dsum2 = mpas_globalSum(darray2d, MPI_COMM_WORLD, indxRange)
-   rsum2 = mpas_globalSum(rarray2d, MPI_COMM_WORLD, indxRange)
-   isum2 = mpas_globalSum(iarray2d, MPI_COMM_WORLD, indxRange)
-   lsum2 = mpas_globalSum(larray2d, MPI_COMM_WORLD, indxRange)
-   dsum3 = mpas_globalSum(darray2d, dmask2d, MPI_COMM_WORLD)
-   rsum3 = mpas_globalSum(rarray2d, rmask2d, MPI_COMM_WORLD)
-   isum3 = mpas_globalSum(iarray2d, imask2d, MPI_COMM_WORLD)
-   lsum3 = mpas_globalSum(larray2d, lmask2d, MPI_COMM_WORLD)
-   dsum4 = mpas_globalSum(darray2d, dmask2d, MPI_COMM_WORLD, indxRange)
-   rsum4 = mpas_globalSum(rarray2d, rmask2d, MPI_COMM_WORLD, indxRange)
-   isum4 = mpas_globalSum(iarray2d, imask2d, MPI_COMM_WORLD, indxRange)
-   lsum4 = mpas_globalSum(larray2d, lmask2d, MPI_COMM_WORLD, indxRange)
+   dsum1 = mpas_global_sum(darray2d, MPI_COMM_WORLD)
+   rsum1 = mpas_global_sum(rarray2d, MPI_COMM_WORLD)
+   isum1 = mpas_global_sum(iarray2d, MPI_COMM_WORLD)
+   lsum1 = mpas_global_sum(larray2d, MPI_COMM_WORLD)
+   dsum2 = mpas_global_sum(darray2d, MPI_COMM_WORLD, indxRange)
+   rsum2 = mpas_global_sum(rarray2d, MPI_COMM_WORLD, indxRange)
+   isum2 = mpas_global_sum(iarray2d, MPI_COMM_WORLD, indxRange)
+   lsum2 = mpas_global_sum(larray2d, MPI_COMM_WORLD, indxRange)
+   dsum3 = mpas_global_sum(darray2d, dmask2d, MPI_COMM_WORLD)
+   rsum3 = mpas_global_sum(rarray2d, rmask2d, MPI_COMM_WORLD)
+   isum3 = mpas_global_sum(iarray2d, imask2d, MPI_COMM_WORLD)
+   lsum3 = mpas_global_sum(larray2d, lmask2d, MPI_COMM_WORLD)
+   dsum4 = mpas_global_sum(darray2d, dmask2d, MPI_COMM_WORLD, indxRange)
+   rsum4 = mpas_global_sum(rarray2d, rmask2d, MPI_COMM_WORLD, indxRange)
+   isum4 = mpas_global_sum(iarray2d, imask2d, MPI_COMM_WORLD, indxRange)
+   lsum4 = mpas_global_sum(larray2d, lmask2d, MPI_COMM_WORLD, indxRange)
    if (dsum1 == dref) then
       print *, 'Global sum array2d double: PASS'
    else
@@ -526,22 +526,22 @@ program sumTest
    rref2 = dref2
    iref  = lref
    iref2 = lref2
-   dsum1 = mpas_globalSum(darray3d, MPI_COMM_WORLD)
-   rsum1 = mpas_globalSum(rarray3d, MPI_COMM_WORLD)
-   isum1 = mpas_globalSum(iarray3d, MPI_COMM_WORLD)
-   lsum1 = mpas_globalSum(larray3d, MPI_COMM_WORLD)
-   dsum2 = mpas_globalSum(darray3d, MPI_COMM_WORLD, indxRange)
-   rsum2 = mpas_globalSum(rarray3d, MPI_COMM_WORLD, indxRange)
-   isum2 = mpas_globalSum(iarray3d, MPI_COMM_WORLD, indxRange)
-   lsum2 = mpas_globalSum(larray3d, MPI_COMM_WORLD, indxRange)
-   dsum3 = mpas_globalSum(darray3d, dmask3d, MPI_COMM_WORLD)
-   rsum3 = mpas_globalSum(rarray3d, rmask3d, MPI_COMM_WORLD)
-   isum3 = mpas_globalSum(iarray3d, imask3d, MPI_COMM_WORLD)
-   lsum3 = mpas_globalSum(larray3d, lmask3d, MPI_COMM_WORLD)
-   dsum4 = mpas_globalSum(darray3d, dmask3d, MPI_COMM_WORLD, indxRange)
-   rsum4 = mpas_globalSum(rarray3d, rmask3d, MPI_COMM_WORLD, indxRange)
-   isum4 = mpas_globalSum(iarray3d, imask3d, MPI_COMM_WORLD, indxRange)
-   lsum4 = mpas_globalSum(larray3d, lmask3d, MPI_COMM_WORLD, indxRange)
+   dsum1 = mpas_global_sum(darray3d, MPI_COMM_WORLD)
+   rsum1 = mpas_global_sum(rarray3d, MPI_COMM_WORLD)
+   isum1 = mpas_global_sum(iarray3d, MPI_COMM_WORLD)
+   lsum1 = mpas_global_sum(larray3d, MPI_COMM_WORLD)
+   dsum2 = mpas_global_sum(darray3d, MPI_COMM_WORLD, indxRange)
+   rsum2 = mpas_global_sum(rarray3d, MPI_COMM_WORLD, indxRange)
+   isum2 = mpas_global_sum(iarray3d, MPI_COMM_WORLD, indxRange)
+   lsum2 = mpas_global_sum(larray3d, MPI_COMM_WORLD, indxRange)
+   dsum3 = mpas_global_sum(darray3d, dmask3d, MPI_COMM_WORLD)
+   rsum3 = mpas_global_sum(rarray3d, rmask3d, MPI_COMM_WORLD)
+   isum3 = mpas_global_sum(iarray3d, imask3d, MPI_COMM_WORLD)
+   lsum3 = mpas_global_sum(larray3d, lmask3d, MPI_COMM_WORLD)
+   dsum4 = mpas_global_sum(darray3d, dmask3d, MPI_COMM_WORLD, indxRange)
+   rsum4 = mpas_global_sum(rarray3d, rmask3d, MPI_COMM_WORLD, indxRange)
+   isum4 = mpas_global_sum(iarray3d, imask3d, MPI_COMM_WORLD, indxRange)
+   lsum4 = mpas_global_sum(larray3d, lmask3d, MPI_COMM_WORLD, indxRange)
    if (dsum1 == dref) then
       print *, 'Global sum array3d double: PASS'
    else
@@ -680,22 +680,22 @@ program sumTest
    rref2 = dref2
    iref  = lref
    iref2 = lref2
-   dsum1 = mpas_globalSum(darray4d, MPI_COMM_WORLD)
-   rsum1 = mpas_globalSum(rarray4d, MPI_COMM_WORLD)
-   isum1 = mpas_globalSum(iarray4d, MPI_COMM_WORLD)
-   lsum1 = mpas_globalSum(larray4d, MPI_COMM_WORLD)
-   dsum2 = mpas_globalSum(darray4d, MPI_COMM_WORLD, indxRange)
-   rsum2 = mpas_globalSum(rarray4d, MPI_COMM_WORLD, indxRange)
-   isum2 = mpas_globalSum(iarray4d, MPI_COMM_WORLD, indxRange)
-   lsum2 = mpas_globalSum(larray4d, MPI_COMM_WORLD, indxRange)
-   dsum3 = mpas_globalSum(darray4d, dmask4d, MPI_COMM_WORLD)
-   rsum3 = mpas_globalSum(rarray4d, rmask4d, MPI_COMM_WORLD)
-   isum3 = mpas_globalSum(iarray4d, imask4d, MPI_COMM_WORLD)
-   lsum3 = mpas_globalSum(larray4d, lmask4d, MPI_COMM_WORLD)
-   dsum4 = mpas_globalSum(darray4d, dmask4d, MPI_COMM_WORLD, indxRange)
-   rsum4 = mpas_globalSum(rarray4d, rmask4d, MPI_COMM_WORLD, indxRange)
-   isum4 = mpas_globalSum(iarray4d, imask4d, MPI_COMM_WORLD, indxRange)
-   lsum4 = mpas_globalSum(larray4d, lmask4d, MPI_COMM_WORLD, indxRange)
+   dsum1 = mpas_global_sum(darray4d, MPI_COMM_WORLD)
+   rsum1 = mpas_global_sum(rarray4d, MPI_COMM_WORLD)
+   isum1 = mpas_global_sum(iarray4d, MPI_COMM_WORLD)
+   lsum1 = mpas_global_sum(larray4d, MPI_COMM_WORLD)
+   dsum2 = mpas_global_sum(darray4d, MPI_COMM_WORLD, indxRange)
+   rsum2 = mpas_global_sum(rarray4d, MPI_COMM_WORLD, indxRange)
+   isum2 = mpas_global_sum(iarray4d, MPI_COMM_WORLD, indxRange)
+   lsum2 = mpas_global_sum(larray4d, MPI_COMM_WORLD, indxRange)
+   dsum3 = mpas_global_sum(darray4d, dmask4d, MPI_COMM_WORLD)
+   rsum3 = mpas_global_sum(rarray4d, rmask4d, MPI_COMM_WORLD)
+   isum3 = mpas_global_sum(iarray4d, imask4d, MPI_COMM_WORLD)
+   lsum3 = mpas_global_sum(larray4d, lmask4d, MPI_COMM_WORLD)
+   dsum4 = mpas_global_sum(darray4d, dmask4d, MPI_COMM_WORLD, indxRange)
+   rsum4 = mpas_global_sum(rarray4d, rmask4d, MPI_COMM_WORLD, indxRange)
+   isum4 = mpas_global_sum(iarray4d, imask4d, MPI_COMM_WORLD, indxRange)
+   lsum4 = mpas_global_sum(larray4d, lmask4d, MPI_COMM_WORLD, indxRange)
    if (dsum1 == dref) then
       print *, 'Global sum array4d double: PASS'
    else
@@ -838,22 +838,22 @@ program sumTest
    rref2 = dref2
    iref  = lref
    iref2 = lref2
-   dsum1 = mpas_globalSum(darray5d, MPI_COMM_WORLD)
-   rsum1 = mpas_globalSum(rarray5d, MPI_COMM_WORLD)
-   isum1 = mpas_globalSum(iarray5d, MPI_COMM_WORLD)
-   lsum1 = mpas_globalSum(larray5d, MPI_COMM_WORLD)
-   dsum2 = mpas_globalSum(darray5d, MPI_COMM_WORLD, indxRange)
-   rsum2 = mpas_globalSum(rarray5d, MPI_COMM_WORLD, indxRange)
-   isum2 = mpas_globalSum(iarray5d, MPI_COMM_WORLD, indxRange)
-   lsum2 = mpas_globalSum(larray5d, MPI_COMM_WORLD, indxRange)
-   dsum3 = mpas_globalSum(darray5d, dmask5d, MPI_COMM_WORLD)
-   rsum3 = mpas_globalSum(rarray5d, rmask5d, MPI_COMM_WORLD)
-   isum3 = mpas_globalSum(iarray5d, imask5d, MPI_COMM_WORLD)
-   lsum3 = mpas_globalSum(larray5d, lmask5d, MPI_COMM_WORLD)
-   dsum4 = mpas_globalSum(darray5d, dmask5d, MPI_COMM_WORLD, indxRange)
-   rsum4 = mpas_globalSum(rarray5d, rmask5d, MPI_COMM_WORLD, indxRange)
-   isum4 = mpas_globalSum(iarray5d, imask5d, MPI_COMM_WORLD, indxRange)
-   lsum4 = mpas_globalSum(larray5d, lmask5d, MPI_COMM_WORLD, indxRange)
+   dsum1 = mpas_global_sum(darray5d, MPI_COMM_WORLD)
+   rsum1 = mpas_global_sum(rarray5d, MPI_COMM_WORLD)
+   isum1 = mpas_global_sum(iarray5d, MPI_COMM_WORLD)
+   lsum1 = mpas_global_sum(larray5d, MPI_COMM_WORLD)
+   dsum2 = mpas_global_sum(darray5d, MPI_COMM_WORLD, indxRange)
+   rsum2 = mpas_global_sum(rarray5d, MPI_COMM_WORLD, indxRange)
+   isum2 = mpas_global_sum(iarray5d, MPI_COMM_WORLD, indxRange)
+   lsum2 = mpas_global_sum(larray5d, MPI_COMM_WORLD, indxRange)
+   dsum3 = mpas_global_sum(darray5d, dmask5d, MPI_COMM_WORLD)
+   rsum3 = mpas_global_sum(rarray5d, rmask5d, MPI_COMM_WORLD)
+   isum3 = mpas_global_sum(iarray5d, imask5d, MPI_COMM_WORLD)
+   lsum3 = mpas_global_sum(larray5d, lmask5d, MPI_COMM_WORLD)
+   dsum4 = mpas_global_sum(darray5d, dmask5d, MPI_COMM_WORLD, indxRange)
+   rsum4 = mpas_global_sum(rarray5d, rmask5d, MPI_COMM_WORLD, indxRange)
+   isum4 = mpas_global_sum(iarray5d, imask5d, MPI_COMM_WORLD, indxRange)
+   lsum4 = mpas_global_sum(larray5d, lmask5d, MPI_COMM_WORLD, indxRange)
    if (dsum1 == dref) then
       print *, 'Global sum array5d double: PASS'
    else
@@ -998,22 +998,22 @@ program sumTest
    rref2 = dref2
    iref  = lref
    iref2 = lref2
-   dsum1 = mpas_globalSum(darray6d, MPI_COMM_WORLD)
-   rsum1 = mpas_globalSum(rarray6d, MPI_COMM_WORLD)
-   isum1 = mpas_globalSum(iarray6d, MPI_COMM_WORLD)
-   lsum1 = mpas_globalSum(larray6d, MPI_COMM_WORLD)
-   dsum2 = mpas_globalSum(darray6d, MPI_COMM_WORLD, indxRange)
-   rsum2 = mpas_globalSum(rarray6d, MPI_COMM_WORLD, indxRange)
-   isum2 = mpas_globalSum(iarray6d, MPI_COMM_WORLD, indxRange)
-   lsum2 = mpas_globalSum(larray6d, MPI_COMM_WORLD, indxRange)
-   dsum3 = mpas_globalSum(darray6d, dmask6d, MPI_COMM_WORLD)
-   rsum3 = mpas_globalSum(rarray6d, rmask6d, MPI_COMM_WORLD)
-   isum3 = mpas_globalSum(iarray6d, imask6d, MPI_COMM_WORLD)
-   lsum3 = mpas_globalSum(larray6d, lmask6d, MPI_COMM_WORLD)
-   dsum4 = mpas_globalSum(darray6d, dmask6d, MPI_COMM_WORLD, indxRange)
-   rsum4 = mpas_globalSum(rarray6d, rmask6d, MPI_COMM_WORLD, indxRange)
-   isum4 = mpas_globalSum(iarray6d, imask6d, MPI_COMM_WORLD, indxRange)
-   lsum4 = mpas_globalSum(larray6d, lmask6d, MPI_COMM_WORLD, indxRange)
+   dsum1 = mpas_global_sum(darray6d, MPI_COMM_WORLD)
+   rsum1 = mpas_global_sum(rarray6d, MPI_COMM_WORLD)
+   isum1 = mpas_global_sum(iarray6d, MPI_COMM_WORLD)
+   lsum1 = mpas_global_sum(larray6d, MPI_COMM_WORLD)
+   dsum2 = mpas_global_sum(darray6d, MPI_COMM_WORLD, indxRange)
+   rsum2 = mpas_global_sum(rarray6d, MPI_COMM_WORLD, indxRange)
+   isum2 = mpas_global_sum(iarray6d, MPI_COMM_WORLD, indxRange)
+   lsum2 = mpas_global_sum(larray6d, MPI_COMM_WORLD, indxRange)
+   dsum3 = mpas_global_sum(darray6d, dmask6d, MPI_COMM_WORLD)
+   rsum3 = mpas_global_sum(rarray6d, rmask6d, MPI_COMM_WORLD)
+   isum3 = mpas_global_sum(iarray6d, imask6d, MPI_COMM_WORLD)
+   lsum3 = mpas_global_sum(larray6d, lmask6d, MPI_COMM_WORLD)
+   dsum4 = mpas_global_sum(darray6d, dmask6d, MPI_COMM_WORLD, indxRange)
+   rsum4 = mpas_global_sum(rarray6d, rmask6d, MPI_COMM_WORLD, indxRange)
+   isum4 = mpas_global_sum(iarray6d, imask6d, MPI_COMM_WORLD, indxRange)
+   lsum4 = mpas_global_sum(larray6d, lmask6d, MPI_COMM_WORLD, indxRange)
    if (dsum1 == dref) then
       print *, 'Global sum array6d double: PASS'
    else
@@ -1194,10 +1194,10 @@ program sumTest
    rscalar = rarray0n(1)
    iscalar = iarray0n(1)
    lscalar = larray0n(1)
-   dref = mpas_globalSum(dscalar, MPI_COMM_WORLD)
-   rref = mpas_globalSum(rscalar, MPI_COMM_WORLD)
-   iref = mpas_globalSum(iscalar, MPI_COMM_WORLD)
-   lref = mpas_globalSum(lscalar, MPI_COMM_WORLD)
+   dref = mpas_global_sum(dscalar, MPI_COMM_WORLD)
+   rref = mpas_global_sum(rscalar, MPI_COMM_WORLD)
+   iref = mpas_global_sum(iscalar, MPI_COMM_WORLD)
+   lref = mpas_global_sum(lscalar, MPI_COMM_WORLD)
 
    ! Check that the reference sums for floats and doubles
    ! are dependent on order of summation and then ints/longs are not
@@ -1221,10 +1221,10 @@ program sumTest
    endif
 
    ! Now do actual multi-field and reproducibility tests
-   dsum1n = mpas_globalSumNfld(darray0n, MPI_COMM_WORLD)
-   rsum1n = mpas_globalSumNfld(rarray0n, MPI_COMM_WORLD)
-   isum1n = mpas_globalSumNfld(iarray0n, MPI_COMM_WORLD)
-   lsum1n = mpas_globalSumNfld(larray0n, MPI_COMM_WORLD)
+   dsum1n = mpas_global_sum_nfld(darray0n, MPI_COMM_WORLD)
+   rsum1n = mpas_global_sum_nfld(rarray0n, MPI_COMM_WORLD)
+   isum1n = mpas_global_sum_nfld(iarray0n, MPI_COMM_WORLD)
+   lsum1n = mpas_global_sum_nfld(larray0n, MPI_COMM_WORLD)
    if (dsum1n(1) == dref .and. dsum1n(2) == dref .and. &
        dsum1n(3) == dref) then
       print *, 'Reproducibility and nfld scalar double: PASS'
@@ -1303,28 +1303,28 @@ program sumTest
    end do
    end do
    ! Use the single-field interface to compute reference sums
-   dref = mpas_globalSum(darray1n(:,1), MPI_COMM_WORLD)
-   rref = mpas_globalSum(rarray1n(:,1), MPI_COMM_WORLD)
-   iref = mpas_globalSum(iarray1n(:,1), MPI_COMM_WORLD)
-   lref = mpas_globalSum(larray1n(:,1), MPI_COMM_WORLD)
+   dref = mpas_global_sum(darray1n(:,1), MPI_COMM_WORLD)
+   rref = mpas_global_sum(rarray1n(:,1), MPI_COMM_WORLD)
+   iref = mpas_global_sum(iarray1n(:,1), MPI_COMM_WORLD)
+   lref = mpas_global_sum(larray1n(:,1), MPI_COMM_WORLD)
 
    ! Now compute the various multi-field sums
-   dsum1n = mpas_globalSumNfld(darray1n, MPI_COMM_WORLD)
-   rsum1n = mpas_globalSumNfld(rarray1n, MPI_COMM_WORLD)
-   isum1n = mpas_globalSumNfld(iarray1n, MPI_COMM_WORLD)
-   lsum1n = mpas_globalSumNfld(larray1n, MPI_COMM_WORLD)
-   dsum2n = mpas_globalSumNfld(darray1n, MPI_COMM_WORLD, indxRange)
-   rsum2n = mpas_globalSumNfld(rarray1n, MPI_COMM_WORLD, indxRange)
-   isum2n = mpas_globalSumNfld(iarray1n, MPI_COMM_WORLD, indxRange)
-   lsum2n = mpas_globalSumNfld(larray1n, MPI_COMM_WORLD, indxRange)
-   dsum3n = mpas_globalSumNfld(darray1n, dmask1n, MPI_COMM_WORLD)
-   rsum3n = mpas_globalSumNfld(rarray1n, rmask1n, MPI_COMM_WORLD)
-   isum3n = mpas_globalSumNfld(iarray1n, imask1n, MPI_COMM_WORLD)
-   lsum3n = mpas_globalSumNfld(larray1n, lmask1n, MPI_COMM_WORLD)
-   dsum4n = mpas_globalSumNfld(darray1n, dmask1n, MPI_COMM_WORLD, indxRange)
-   rsum4n = mpas_globalSumNfld(rarray1n, rmask1n, MPI_COMM_WORLD, indxRange)
-   isum4n = mpas_globalSumNfld(iarray1n, imask1n, MPI_COMM_WORLD, indxRange)
-   lsum4n = mpas_globalSumNfld(larray1n, lmask1n, MPI_COMM_WORLD, indxRange)
+   dsum1n = mpas_global_sum_nfld(darray1n, MPI_COMM_WORLD)
+   rsum1n = mpas_global_sum_nfld(rarray1n, MPI_COMM_WORLD)
+   isum1n = mpas_global_sum_nfld(iarray1n, MPI_COMM_WORLD)
+   lsum1n = mpas_global_sum_nfld(larray1n, MPI_COMM_WORLD)
+   dsum2n = mpas_global_sum_nfld(darray1n, MPI_COMM_WORLD, indxRange)
+   rsum2n = mpas_global_sum_nfld(rarray1n, MPI_COMM_WORLD, indxRange)
+   isum2n = mpas_global_sum_nfld(iarray1n, MPI_COMM_WORLD, indxRange)
+   lsum2n = mpas_global_sum_nfld(larray1n, MPI_COMM_WORLD, indxRange)
+   dsum3n = mpas_global_sum_nfld(darray1n, dmask1n, MPI_COMM_WORLD)
+   rsum3n = mpas_global_sum_nfld(rarray1n, rmask1n, MPI_COMM_WORLD)
+   isum3n = mpas_global_sum_nfld(iarray1n, imask1n, MPI_COMM_WORLD)
+   lsum3n = mpas_global_sum_nfld(larray1n, lmask1n, MPI_COMM_WORLD)
+   dsum4n = mpas_global_sum_nfld(darray1n, dmask1n, MPI_COMM_WORLD, indxRange)
+   rsum4n = mpas_global_sum_nfld(rarray1n, rmask1n, MPI_COMM_WORLD, indxRange)
+   isum4n = mpas_global_sum_nfld(iarray1n, imask1n, MPI_COMM_WORLD, indxRange)
+   lsum4n = mpas_global_sum_nfld(larray1n, lmask1n, MPI_COMM_WORLD, indxRange)
 
    if (dsum1n(1) == dref .and. dsum1n(2) == dref .and. &
        dsum1n(3) == dref) then
@@ -1448,28 +1448,28 @@ program sumTest
    end do
    end do
    ! Use the single-field interface to compute reference sums
-   dref = mpas_globalSum(darray2n(:,:,1), MPI_COMM_WORLD)
-   rref = mpas_globalSum(rarray2n(:,:,1), MPI_COMM_WORLD)
-   iref = mpas_globalSum(iarray2n(:,:,1), MPI_COMM_WORLD)
-   lref = mpas_globalSum(larray2n(:,:,1), MPI_COMM_WORLD)
+   dref = mpas_global_sum(darray2n(:,:,1), MPI_COMM_WORLD)
+   rref = mpas_global_sum(rarray2n(:,:,1), MPI_COMM_WORLD)
+   iref = mpas_global_sum(iarray2n(:,:,1), MPI_COMM_WORLD)
+   lref = mpas_global_sum(larray2n(:,:,1), MPI_COMM_WORLD)
 
    ! Now compute the various multi-field sums
-   dsum1n = mpas_globalSumNfld(darray2n, MPI_COMM_WORLD)
-   rsum1n = mpas_globalSumNfld(rarray2n, MPI_COMM_WORLD)
-   isum1n = mpas_globalSumNfld(iarray2n, MPI_COMM_WORLD)
-   lsum1n = mpas_globalSumNfld(larray2n, MPI_COMM_WORLD)
-   dsum2n = mpas_globalSumNfld(darray2n, MPI_COMM_WORLD, indxRange)
-   rsum2n = mpas_globalSumNfld(rarray2n, MPI_COMM_WORLD, indxRange)
-   isum2n = mpas_globalSumNfld(iarray2n, MPI_COMM_WORLD, indxRange)
-   lsum2n = mpas_globalSumNfld(larray2n, MPI_COMM_WORLD, indxRange)
-   dsum3n = mpas_globalSumNfld(darray2n, dmask2n, MPI_COMM_WORLD)
-   rsum3n = mpas_globalSumNfld(rarray2n, rmask2n, MPI_COMM_WORLD)
-   isum3n = mpas_globalSumNfld(iarray2n, imask2n, MPI_COMM_WORLD)
-   lsum3n = mpas_globalSumNfld(larray2n, lmask2n, MPI_COMM_WORLD)
-   dsum4n = mpas_globalSumNfld(darray2n, dmask2n, MPI_COMM_WORLD, indxRange)
-   rsum4n = mpas_globalSumNfld(rarray2n, rmask2n, MPI_COMM_WORLD, indxRange)
-   isum4n = mpas_globalSumNfld(iarray2n, imask2n, MPI_COMM_WORLD, indxRange)
-   lsum4n = mpas_globalSumNfld(larray2n, lmask2n, MPI_COMM_WORLD, indxRange)
+   dsum1n = mpas_global_sum_nfld(darray2n, MPI_COMM_WORLD)
+   rsum1n = mpas_global_sum_nfld(rarray2n, MPI_COMM_WORLD)
+   isum1n = mpas_global_sum_nfld(iarray2n, MPI_COMM_WORLD)
+   lsum1n = mpas_global_sum_nfld(larray2n, MPI_COMM_WORLD)
+   dsum2n = mpas_global_sum_nfld(darray2n, MPI_COMM_WORLD, indxRange)
+   rsum2n = mpas_global_sum_nfld(rarray2n, MPI_COMM_WORLD, indxRange)
+   isum2n = mpas_global_sum_nfld(iarray2n, MPI_COMM_WORLD, indxRange)
+   lsum2n = mpas_global_sum_nfld(larray2n, MPI_COMM_WORLD, indxRange)
+   dsum3n = mpas_global_sum_nfld(darray2n, dmask2n, MPI_COMM_WORLD)
+   rsum3n = mpas_global_sum_nfld(rarray2n, rmask2n, MPI_COMM_WORLD)
+   isum3n = mpas_global_sum_nfld(iarray2n, imask2n, MPI_COMM_WORLD)
+   lsum3n = mpas_global_sum_nfld(larray2n, lmask2n, MPI_COMM_WORLD)
+   dsum4n = mpas_global_sum_nfld(darray2n, dmask2n, MPI_COMM_WORLD, indxRange)
+   rsum4n = mpas_global_sum_nfld(rarray2n, rmask2n, MPI_COMM_WORLD, indxRange)
+   isum4n = mpas_global_sum_nfld(iarray2n, imask2n, MPI_COMM_WORLD, indxRange)
+   lsum4n = mpas_global_sum_nfld(larray2n, lmask2n, MPI_COMM_WORLD, indxRange)
 
    if (dsum1n(1) == dref .and. dsum1n(2) == dref .and. &
        dsum1n(3) == dref) then
@@ -1602,28 +1602,28 @@ program sumTest
    end do
    end do
    ! Use the single-field interface to compute reference sums
-   dref = mpas_globalSum(darray3n(:,:,:,1), MPI_COMM_WORLD)
-   rref = mpas_globalSum(rarray3n(:,:,:,1), MPI_COMM_WORLD)
-   iref = mpas_globalSum(iarray3n(:,:,:,1), MPI_COMM_WORLD)
-   lref = mpas_globalSum(larray3n(:,:,:,1), MPI_COMM_WORLD)
+   dref = mpas_global_sum(darray3n(:,:,:,1), MPI_COMM_WORLD)
+   rref = mpas_global_sum(rarray3n(:,:,:,1), MPI_COMM_WORLD)
+   iref = mpas_global_sum(iarray3n(:,:,:,1), MPI_COMM_WORLD)
+   lref = mpas_global_sum(larray3n(:,:,:,1), MPI_COMM_WORLD)
 
    ! Now compute the various multi-field sums
-   dsum1n = mpas_globalSumNfld(darray3n, MPI_COMM_WORLD)
-   rsum1n = mpas_globalSumNfld(rarray3n, MPI_COMM_WORLD)
-   isum1n = mpas_globalSumNfld(iarray3n, MPI_COMM_WORLD)
-   lsum1n = mpas_globalSumNfld(larray3n, MPI_COMM_WORLD)
-   dsum2n = mpas_globalSumNfld(darray3n, MPI_COMM_WORLD, indxRange)
-   rsum2n = mpas_globalSumNfld(rarray3n, MPI_COMM_WORLD, indxRange)
-   isum2n = mpas_globalSumNfld(iarray3n, MPI_COMM_WORLD, indxRange)
-   lsum2n = mpas_globalSumNfld(larray3n, MPI_COMM_WORLD, indxRange)
-   dsum3n = mpas_globalSumNfld(darray3n, dmask3n, MPI_COMM_WORLD)
-   rsum3n = mpas_globalSumNfld(rarray3n, rmask3n, MPI_COMM_WORLD)
-   isum3n = mpas_globalSumNfld(iarray3n, imask3n, MPI_COMM_WORLD)
-   lsum3n = mpas_globalSumNfld(larray3n, lmask3n, MPI_COMM_WORLD)
-   dsum4n = mpas_globalSumNfld(darray3n, dmask3n, MPI_COMM_WORLD, indxRange)
-   rsum4n = mpas_globalSumNfld(rarray3n, rmask3n, MPI_COMM_WORLD, indxRange)
-   isum4n = mpas_globalSumNfld(iarray3n, imask3n, MPI_COMM_WORLD, indxRange)
-   lsum4n = mpas_globalSumNfld(larray3n, lmask3n, MPI_COMM_WORLD, indxRange)
+   dsum1n = mpas_global_sum_nfld(darray3n, MPI_COMM_WORLD)
+   rsum1n = mpas_global_sum_nfld(rarray3n, MPI_COMM_WORLD)
+   isum1n = mpas_global_sum_nfld(iarray3n, MPI_COMM_WORLD)
+   lsum1n = mpas_global_sum_nfld(larray3n, MPI_COMM_WORLD)
+   dsum2n = mpas_global_sum_nfld(darray3n, MPI_COMM_WORLD, indxRange)
+   rsum2n = mpas_global_sum_nfld(rarray3n, MPI_COMM_WORLD, indxRange)
+   isum2n = mpas_global_sum_nfld(iarray3n, MPI_COMM_WORLD, indxRange)
+   lsum2n = mpas_global_sum_nfld(larray3n, MPI_COMM_WORLD, indxRange)
+   dsum3n = mpas_global_sum_nfld(darray3n, dmask3n, MPI_COMM_WORLD)
+   rsum3n = mpas_global_sum_nfld(rarray3n, rmask3n, MPI_COMM_WORLD)
+   isum3n = mpas_global_sum_nfld(iarray3n, imask3n, MPI_COMM_WORLD)
+   lsum3n = mpas_global_sum_nfld(larray3n, lmask3n, MPI_COMM_WORLD)
+   dsum4n = mpas_global_sum_nfld(darray3n, dmask3n, MPI_COMM_WORLD, indxRange)
+   rsum4n = mpas_global_sum_nfld(rarray3n, rmask3n, MPI_COMM_WORLD, indxRange)
+   isum4n = mpas_global_sum_nfld(iarray3n, imask3n, MPI_COMM_WORLD, indxRange)
+   lsum4n = mpas_global_sum_nfld(larray3n, lmask3n, MPI_COMM_WORLD, indxRange)
 
    if (dsum1n(1) == dref .and. dsum1n(2) == dref .and. &
        dsum1n(3) == dref) then
@@ -1769,28 +1769,28 @@ program sumTest
    end do
    end do
    ! Use the single-field interface to compute reference sums
-   dref = mpas_globalSum(darray4n(:,:,:,:,1), MPI_COMM_WORLD)
-   rref = mpas_globalSum(rarray4n(:,:,:,:,1), MPI_COMM_WORLD)
-   iref = mpas_globalSum(iarray4n(:,:,:,:,1), MPI_COMM_WORLD)
-   lref = mpas_globalSum(larray4n(:,:,:,:,1), MPI_COMM_WORLD)
+   dref = mpas_global_sum(darray4n(:,:,:,:,1), MPI_COMM_WORLD)
+   rref = mpas_global_sum(rarray4n(:,:,:,:,1), MPI_COMM_WORLD)
+   iref = mpas_global_sum(iarray4n(:,:,:,:,1), MPI_COMM_WORLD)
+   lref = mpas_global_sum(larray4n(:,:,:,:,1), MPI_COMM_WORLD)
 
    ! Now compute the various multi-field sums
-   dsum1n = mpas_globalSumNfld(darray4n, MPI_COMM_WORLD)
-   rsum1n = mpas_globalSumNfld(rarray4n, MPI_COMM_WORLD)
-   isum1n = mpas_globalSumNfld(iarray4n, MPI_COMM_WORLD)
-   lsum1n = mpas_globalSumNfld(larray4n, MPI_COMM_WORLD)
-   dsum2n = mpas_globalSumNfld(darray4n, MPI_COMM_WORLD, indxRange)
-   rsum2n = mpas_globalSumNfld(rarray4n, MPI_COMM_WORLD, indxRange)
-   isum2n = mpas_globalSumNfld(iarray4n, MPI_COMM_WORLD, indxRange)
-   lsum2n = mpas_globalSumNfld(larray4n, MPI_COMM_WORLD, indxRange)
-   dsum3n = mpas_globalSumNfld(darray4n, dmask4n, MPI_COMM_WORLD)
-   rsum3n = mpas_globalSumNfld(rarray4n, rmask4n, MPI_COMM_WORLD)
-   isum3n = mpas_globalSumNfld(iarray4n, imask4n, MPI_COMM_WORLD)
-   lsum3n = mpas_globalSumNfld(larray4n, lmask4n, MPI_COMM_WORLD)
-   dsum4n = mpas_globalSumNfld(darray4n, dmask4n, MPI_COMM_WORLD, indxRange)
-   rsum4n = mpas_globalSumNfld(rarray4n, rmask4n, MPI_COMM_WORLD, indxRange)
-   isum4n = mpas_globalSumNfld(iarray4n, imask4n, MPI_COMM_WORLD, indxRange)
-   lsum4n = mpas_globalSumNfld(larray4n, lmask4n, MPI_COMM_WORLD, indxRange)
+   dsum1n = mpas_global_sum_nfld(darray4n, MPI_COMM_WORLD)
+   rsum1n = mpas_global_sum_nfld(rarray4n, MPI_COMM_WORLD)
+   isum1n = mpas_global_sum_nfld(iarray4n, MPI_COMM_WORLD)
+   lsum1n = mpas_global_sum_nfld(larray4n, MPI_COMM_WORLD)
+   dsum2n = mpas_global_sum_nfld(darray4n, MPI_COMM_WORLD, indxRange)
+   rsum2n = mpas_global_sum_nfld(rarray4n, MPI_COMM_WORLD, indxRange)
+   isum2n = mpas_global_sum_nfld(iarray4n, MPI_COMM_WORLD, indxRange)
+   lsum2n = mpas_global_sum_nfld(larray4n, MPI_COMM_WORLD, indxRange)
+   dsum3n = mpas_global_sum_nfld(darray4n, dmask4n, MPI_COMM_WORLD)
+   rsum3n = mpas_global_sum_nfld(rarray4n, rmask4n, MPI_COMM_WORLD)
+   isum3n = mpas_global_sum_nfld(iarray4n, imask4n, MPI_COMM_WORLD)
+   lsum3n = mpas_global_sum_nfld(larray4n, lmask4n, MPI_COMM_WORLD)
+   dsum4n = mpas_global_sum_nfld(darray4n, dmask4n, MPI_COMM_WORLD, indxRange)
+   rsum4n = mpas_global_sum_nfld(rarray4n, rmask4n, MPI_COMM_WORLD, indxRange)
+   isum4n = mpas_global_sum_nfld(iarray4n, imask4n, MPI_COMM_WORLD, indxRange)
+   lsum4n = mpas_global_sum_nfld(larray4n, lmask4n, MPI_COMM_WORLD, indxRange)
 
    if (dsum1n(1) == dref .and. dsum1n(2) == dref .and. &
        dsum1n(3) == dref) then
@@ -1945,28 +1945,28 @@ program sumTest
    end do
    end do
    ! Use the single-field interface to compute reference sums
-   dref = mpas_globalSum(darray5n(:,:,:,:,:,1), MPI_COMM_WORLD)
-   rref = mpas_globalSum(rarray5n(:,:,:,:,:,1), MPI_COMM_WORLD)
-   iref = mpas_globalSum(iarray5n(:,:,:,:,:,1), MPI_COMM_WORLD)
-   lref = mpas_globalSum(larray5n(:,:,:,:,:,1), MPI_COMM_WORLD)
+   dref = mpas_global_sum(darray5n(:,:,:,:,:,1), MPI_COMM_WORLD)
+   rref = mpas_global_sum(rarray5n(:,:,:,:,:,1), MPI_COMM_WORLD)
+   iref = mpas_global_sum(iarray5n(:,:,:,:,:,1), MPI_COMM_WORLD)
+   lref = mpas_global_sum(larray5n(:,:,:,:,:,1), MPI_COMM_WORLD)
 
    ! Now compute the various multi-field sums
-   dsum1n = mpas_globalSumNfld(darray5n, MPI_COMM_WORLD)
-   rsum1n = mpas_globalSumNfld(rarray5n, MPI_COMM_WORLD)
-   isum1n = mpas_globalSumNfld(iarray5n, MPI_COMM_WORLD)
-   lsum1n = mpas_globalSumNfld(larray5n, MPI_COMM_WORLD)
-   dsum2n = mpas_globalSumNfld(darray5n, MPI_COMM_WORLD, indxRange)
-   rsum2n = mpas_globalSumNfld(rarray5n, MPI_COMM_WORLD, indxRange)
-   isum2n = mpas_globalSumNfld(iarray5n, MPI_COMM_WORLD, indxRange)
-   lsum2n = mpas_globalSumNfld(larray5n, MPI_COMM_WORLD, indxRange)
-   dsum3n = mpas_globalSumNfld(darray5n, dmask5n, MPI_COMM_WORLD)
-   rsum3n = mpas_globalSumNfld(rarray5n, rmask5n, MPI_COMM_WORLD)
-   isum3n = mpas_globalSumNfld(iarray5n, imask5n, MPI_COMM_WORLD)
-   lsum3n = mpas_globalSumNfld(larray5n, lmask5n, MPI_COMM_WORLD)
-   dsum4n = mpas_globalSumNfld(darray5n, dmask5n, MPI_COMM_WORLD, indxRange)
-   rsum4n = mpas_globalSumNfld(rarray5n, rmask5n, MPI_COMM_WORLD, indxRange)
-   isum4n = mpas_globalSumNfld(iarray5n, imask5n, MPI_COMM_WORLD, indxRange)
-   lsum4n = mpas_globalSumNfld(larray5n, lmask5n, MPI_COMM_WORLD, indxRange)
+   dsum1n = mpas_global_sum_nfld(darray5n, MPI_COMM_WORLD)
+   rsum1n = mpas_global_sum_nfld(rarray5n, MPI_COMM_WORLD)
+   isum1n = mpas_global_sum_nfld(iarray5n, MPI_COMM_WORLD)
+   lsum1n = mpas_global_sum_nfld(larray5n, MPI_COMM_WORLD)
+   dsum2n = mpas_global_sum_nfld(darray5n, MPI_COMM_WORLD, indxRange)
+   rsum2n = mpas_global_sum_nfld(rarray5n, MPI_COMM_WORLD, indxRange)
+   isum2n = mpas_global_sum_nfld(iarray5n, MPI_COMM_WORLD, indxRange)
+   lsum2n = mpas_global_sum_nfld(larray5n, MPI_COMM_WORLD, indxRange)
+   dsum3n = mpas_global_sum_nfld(darray5n, dmask5n, MPI_COMM_WORLD)
+   rsum3n = mpas_global_sum_nfld(rarray5n, rmask5n, MPI_COMM_WORLD)
+   isum3n = mpas_global_sum_nfld(iarray5n, imask5n, MPI_COMM_WORLD)
+   lsum3n = mpas_global_sum_nfld(larray5n, lmask5n, MPI_COMM_WORLD)
+   dsum4n = mpas_global_sum_nfld(darray5n, dmask5n, MPI_COMM_WORLD, indxRange)
+   rsum4n = mpas_global_sum_nfld(rarray5n, rmask5n, MPI_COMM_WORLD, indxRange)
+   isum4n = mpas_global_sum_nfld(iarray5n, imask5n, MPI_COMM_WORLD, indxRange)
+   lsum4n = mpas_global_sum_nfld(larray5n, lmask5n, MPI_COMM_WORLD, indxRange)
 
    if (dsum1n(1) == dref .and. dsum1n(2) == dref .and. &
        dsum1n(3) == dref) then
